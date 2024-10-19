@@ -1,0 +1,5 @@
+project(base_source)
+cmake_minimum_required(VERSION 3.10)
+option(BUILD_TESTS "Build test apps" ON)
+add_subdirectory(logger)
+#add_subdirectory(epoll_scheduler)
