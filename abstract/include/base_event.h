@@ -16,5 +16,4 @@ struct fd_handler {
     int (*write)(scheduler_mon_t *scheduler, struct fd_event *event);
 };
 
-
 #endif /*BASE_EVENT_H*/
