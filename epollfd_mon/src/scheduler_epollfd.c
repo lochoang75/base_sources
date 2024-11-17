@@ -7,8 +7,9 @@ struct epoll_fd_mon {
     struct scheduler_action action;
 };
 
-static int handler_register_epoll_impl(struct scheduler_mon *mon, struct fd_handler *handler)
+static int handler_register_epoll_impl(struct scheduler_mon *mon __attribute__((unused)), struct fd_handler *handler __attribute__((unused)))
 {
+    return 0;
 }
 
 struct scheduler_action *epollfd_open_scheduler()
@@ -25,6 +26,6 @@ struct scheduler_action *epollfd_open_scheduler()
     return &epoll_mon->action;
 }
 
-void epollfd_close_scheduler(struct scheduler_mon *mon)
+void epollfd_close_scheduler(struct scheduler_mon *mon __attribute__((unused)))
 {
 }

@@ -1,7 +1,7 @@
 #include "scheduler_pollfd.h"
 #include <stdlib.h>
 #include <poll.h>
-#include "list.h"
+#include "linked_list.h"
 
 #include "blogger.h"
 
@@ -9,8 +9,9 @@ struct poll_fd_mon {
     struct scheduler_action action;
 };
 
-static int handler_register_poll_impl(struct scheduler_mon *mon, struct fd_handler *handler)
+static int handler_register_poll_impl(struct scheduler_mon *mon __attribute__((unused)), struct fd_handler *handler __attribute__((unused)))
 {
+    return 0;
 }
 
 struct scheduler_action *pollfd_open_scheduler()
@@ -27,6 +28,6 @@ struct scheduler_action *pollfd_open_scheduler()
     return &poll_mon->action;
 }
 
-void pollfd_close_scheduler(struct scheduler_mon *mon)
+void pollfd_close_scheduler(struct scheduler_mon *mon __attribute__((unused)))
 {
 }

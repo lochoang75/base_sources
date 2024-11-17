@@ -1,0 +1,7 @@
+set(library_name data_structure)
+#set(${library_name}_src ${CMAKE_CURRENT_SOURCE_DIR}/src/linked_list.c)
+#add_library(${library_name} STATIC ${${library_name}_src})
+#target_include_directories(${library_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+if (BUILD_TESTS)
+    add_subdirectory(test)
+endif(BUILD_TESTS)

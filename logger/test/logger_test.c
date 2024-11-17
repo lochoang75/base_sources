@@ -1,6 +1,6 @@
 #include "blogger.h"
 
-int main(int argc, char **argv)
+int main(void)
 {
     blog_init(LEVEL_INFO);
     BLOG_INFO("This is info log");
