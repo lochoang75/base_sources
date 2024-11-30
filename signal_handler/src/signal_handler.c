@@ -6,7 +6,7 @@
 
 static void signal_handler(int sig)
 {
-    BLOG(LEVEL_ERR, "Receive signal %d(%s)", sig, strsignal(sig));
+    BLOG(LOG_ERR, "Receive signal %d(%s)", sig, strsignal(sig));
     signal(sig, SIG_DFL);
     raise(sig);
 }

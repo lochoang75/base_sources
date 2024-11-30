@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "base_errors.h"
+#include "abstract_errors.h"
 #include "blogger.h"
 
 #define list_for_each(list, pos) \

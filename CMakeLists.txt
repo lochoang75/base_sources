@@ -1,5 +1,5 @@
-project(base_source)
 cmake_minimum_required(VERSION 3.10)
+project(base_source)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -Wall -Wextra -Werror -std=gnu11 -fPIC")
 option(BUILD_TESTS "Build test apps" ON)
 
@@ -12,5 +12,6 @@ add_subdirectory(logger)
 add_subdirectory(signal_handler)
 add_subdirectory(epollfd_mon)
 add_subdirectory(pollfd_mon)
+add_subdirectory(select_mon)
 add_subdirectory(data_structure)
 add_subdirectory(abstract)

@@ -1,5 +1,5 @@
-#ifndef BASE_EVENT_H
-#define BASE_EVENT_H
+#ifndef ABSTRACT_EVENT_H
+#define ABSTRACT_EVENT_H
 
 typedef struct scheduler_mon scheduler_mon_t;
 struct fd_event {
@@ -16,4 +16,4 @@ struct fd_handler {
     int (*write)(scheduler_mon_t *scheduler, struct fd_event *event);
 };
 
-#endif /*BASE_EVENT_H*/
+#endif /*ABSTRACT_EVENT_H*/
