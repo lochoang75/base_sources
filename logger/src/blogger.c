@@ -13,18 +13,18 @@ static char log_buffer[LOG_BUFFER_SIZE];
 static char *log_buffer = NULL;
 #endif
 #ifndef USE_SYSLOG
-static int log_level = LEVEL_INFO;
+static int log_level = LOG_INFO;
 #endif
 
 const char *s_level_tag[] = {
-    [LEVEL_INFO] = "INFO",
-    [LEVEL_DEBUG] = "DBG",
-    [LEVEL_WARNING] = "WARN",
-    [LEVEL_ERR] = "ERR",
-    [LEVEL_NOTICE] = "NOTI",
-    [LEVEL_EMERG] = "EMER",
-    [LEVEL_CRIT] = "CRIT",
-    [LEVEL_ALERT] = "ALERT"
+    [LOG_INFO] = "INFO",
+    [LOG_DEBUG] = "DBG",
+    [LOG_WARNING] = "WARN",
+    [LOG_ERR] = "ERR",
+    [LOG_NOTICE] = "NOTI",
+    [LOG_EMERG] = "EMER",
+    [LOG_CRIT] = "CRIT",
+    [LOG_ALERT] = "ALERT"
 };
 
 void blog_init(int level)
