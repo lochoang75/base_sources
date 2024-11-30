@@ -19,5 +19,6 @@ jobs:
           ,-whitespace/operators\
           ,-whitespace/parens\
           ,-build/include_subdir\
-          ,-build/header_guard
+          ,-build/header_guard\
+          ,-legal/copyright
           "

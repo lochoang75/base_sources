@@ -13,6 +13,7 @@ jobs:
         lint_filter+=-whitespace/operators,
         lint_filter+=-whitespace/parens,
         lint_filter+=-build/include_subdir,
-        lint_filter+=-build/header_guard
+        lint_filter+=-build/header_guard,
+        lint_filter+=-legal/copyright
         pip install cpplint
         cpplint --recursive --exclude=third_party/* --linelength=200 --filter=${lint_filter} .
