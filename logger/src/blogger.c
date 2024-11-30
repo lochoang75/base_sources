@@ -1,6 +1,7 @@
 #include "blogger.h"
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #ifndef LOG_BUFFER_SIZE
 #define LOG_BUFFER_SIZE (4096)
@@ -10,7 +11,7 @@
 static char log_buffer[LOG_BUFFER_SIZE];
 #else
 static char *log_buffer = NULL;
-#endif 
+#endif
 #ifndef USE_SYSLOG
 static int log_level = LEVEL_INFO;
 #endif

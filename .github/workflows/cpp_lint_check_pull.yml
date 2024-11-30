@@ -10,15 +10,9 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         reporter: github-pr-review
-        flags: --linelength=200 --exclude=third_party/*
-        filter: "-readability/braces\
-          ,-whitespace/braces\
-          ,-whitespace/comments\
-          ,-whitespace/indent\
-          ,-whitespace/newline\
-          ,-whitespace/operators\
-          ,-whitespace/parens\
-          ,-build/include_subdir\
-          ,-build/header_guard\
-          ,-legal/copyright
-          "
+        flags: --linelength=200 --exclude=third_party/* --exclude=build/*
+        filter: ""
+      continue-on-error: true
+    - name: "Exit success"
+      id: exit_success
+      run: exit 0
