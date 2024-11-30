@@ -9,5 +9,4 @@ jobs:
     - run: |
         pip install cpplint
         cpplint --recursive --exclude=third_party/* --linelength=200 \
-         --filter=-readability/braces,-whitespace/braces,-whitespace/comments,-whitespace/indent,\
-         -whitespace/newline,-whitespace/operators,-whitespace/parens .
+         --filter=-readability/braces,-whitespace/braces,-whitespace/comments,-whitespace/indent,-whitespace/newline,-whitespace/operators,-whitespace/parens .
