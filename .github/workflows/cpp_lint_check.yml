@@ -6,11 +6,8 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - uses: actions/setup-python@master
-    - run: pip install cpplint
-    - run: cpplint --recursive --exclude=third_party/* --linelength=200 --filter=-readability/braces
-        ,-whitespace/braces
-        ,-whitespace/comments
-        ,-whitespace/indent
-        ,-whitespace/newline
-        ,-whitespace/operators
-        ,-whitespace/parens .
+    - run: |
+        pip install cpplint
+        cpplint --recursive --exclude=third_party/* --linelength=200 \
+         --filter=-readability/braces,-whitespace/braces,-whitespace/comments,-whitespace/indent,\
+         -whitespace/newline,-whitespace/operators,-whitespace/parens .
