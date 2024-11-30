@@ -7,6 +7,12 @@ jobs:
     - uses: actions/checkout@master
     - uses: actions/setup-python@master
     - run: |
+        lint_filter=-readability/braces,
+        lint_filter+=-whitespace/comments,
+        lint_filter+=-whitespace/newline,
+        lint_filter+=-whitespace/operators,
+        lint_filter+=-whitespace/parens,
+        lint_filter+=-build/include_subdir,
+        lint_filter+=-build/header_guard
         pip install cpplint
-        cpplint --recursive --exclude=third_party/* --linelength=200 \
-         --filter=-readability/braces,-whitespace/braces,-whitespace/comments,-whitespace/indent,-whitespace/newline,-whitespace/operators,-whitespace/parens .
+        cpplint --recursive --exclude=third_party/* --linelength=200 --filter=${lint_filter} .
