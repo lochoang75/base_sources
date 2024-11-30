@@ -10,7 +10,7 @@ jobs:
       id: lint_check
       run: |
         pip install cpplint
-        cpplint --recursive --exclude=third_party/* --exclude=build/* --linelength=200 --filter=${lint_filter} .
+        cpplint --recursive --quiet .
       continue-on-error: true
     - name: "Exit success"
       id: exit_success

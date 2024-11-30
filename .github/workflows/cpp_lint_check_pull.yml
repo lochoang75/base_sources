@@ -10,7 +10,7 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         reporter: github-pr-review
-        flags: --linelength=200 --exclude=third_party/* --exclude=build/*
+        flags: --linelength=200
         filter: ""
       continue-on-error: true
     - name: "Exit success"
