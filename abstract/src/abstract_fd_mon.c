@@ -8,7 +8,7 @@
 #include "scheduler_select.h"
 #include "scheduler_pollfd.h"
 
-struct scheduler_mon *open_scheduler(const char *name, fd_mon_type_t type)
+struct scheduler_mon *open_scheduler(const char *name, mon_type_t type)
 {
     int data_size = sizeof(struct scheduler_mon) + strlen(name) + 1;
     struct scheduler_mon *mon = malloc(data_size);
@@ -22,23 +22,25 @@ struct scheduler_mon *open_scheduler(const char *name, fd_mon_type_t type)
     memcpy(mon->scheduler_name, name, strlen(name));
     switch (type)
     {
-    case FD_MON_USE_EPOLL:
-        mon->scheduler_type = FD_MON_USE_EPOLL;
+    case MON_USE_EPOLL:
+        mon->scheduler_type = MON_USE_EPOLL;
         mon->action = epollfd_open_scheduler();
+        mon->action->container = mon;
         break;
-    case FD_MON_USE_POLL:
-        mon->scheduler_type = FD_MON_USE_POLL;
+    case MON_USE_POLL:
+        mon->scheduler_type = MON_USE_POLL;
         mon->action = pollfd_open_scheduler();
+        mon->action->container = mon;
         break;
-    case FD_MON_USE_SELECT:
-        mon->scheduler_type = FD_MON_USE_SELECT;
+    case MON_USE_SELECT:
+        mon->scheduler_type = MON_USE_SELECT;
         mon->action = selectfd_open_scheduler();
+        mon->action->container = mon;
         break;
     default:
         BLOG(LOG_ERR, "Unable to open scheduler for type: %s", fd_mon_to_string(type));
         break;
     }
-
     if (mon->action == NULL)
     {
         free(mon);
@@ -47,14 +49,14 @@ struct scheduler_mon *open_scheduler(const char *name, fd_mon_type_t type)
     return mon;
 }
 
-int register_handler(struct scheduler_mon *scheduler, struct fd_handler *handler)
+int register_handler(struct scheduler_mon *scheduler, struct mon_request_info *info)
 {
-    if (scheduler == NULL || handler == NULL)
+    if (scheduler == NULL || info == NULL)
     {
-        BLOG(LOG_ERR, "invalid scheduler (%p), handler (%p)", scheduler, handler);
+        BLOG(LOG_ERR, "invalid scheduler (%p), handler (%p)", scheduler, info);
         return -1;
     }
-    return scheduler->action->handler_register(scheduler->action, handler);
+    return scheduler->action->handler_register(scheduler->action, info);
 }
 
 void close_scheduler(struct scheduler_mon *scheduler)
