@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include "abstract_config.h"
 #include "abstract_errors.h"
 #include "blogger.h"
 
@@ -15,8 +17,7 @@
 struct list_node {
     struct list_node *next;
     struct list_node *prev;
-    size_t data_size;
-    char data[0];
+    void *data;
 };
 
 static bool list_is_list_head(struct list_node *list, struct list_node *head)
@@ -37,20 +38,19 @@ struct list_node *list_init(struct list_node *head)
     return head;
 }
 
-base_error_t list_add_tail(struct list_node *list, void *data, size_t data_size)
+ALLOC_MEM_FUNC base_error_t list_add_tail(struct list_node *list, void *data)
 {
-    if (list == NULL || data == NULL || data_size == 0)
+    if (list == NULL || data == NULL)
     {
         return kINVALID_MEM;
     }
 
-    struct list_node *node = malloc(sizeof(struct list_node) + data_size);
+    struct list_node *node = malloc(sizeof(struct list_node));
     if (node == NULL)
     {
         return kNO_MEM;
     }
-    memcpy(node->data, data, data_size);
-    node->data_size = data_size;
+    node->data = data;
     node->next = list;
     node->prev = list->prev;
     list->prev->next = node;
@@ -60,20 +60,19 @@ base_error_t list_add_tail(struct list_node *list, void *data, size_t data_size)
     return kERROR;
 }
 
-base_error_t list_add_head(struct list_node *list, void *data, size_t data_size)
+ALLOC_MEM_FUNC base_error_t list_add_head(struct list_node *list, void *data)
 {
-    if (list == NULL || data == NULL || data_size == 0)
+    if (list == NULL || data == NULL)
     {
         return kINVALID_MEM;
     }
 
-    struct list_node *node = malloc(sizeof(struct list_node) + data_size);
+    struct list_node *node = malloc(sizeof(struct list_node));
     if (node == NULL)
     {
         return kNO_MEM;
     }
-    memcpy(node->data, data, data_size);
-    node->data_size = data_size;
+    node->data = data;
     node->next = list->next;
     node->prev = list;
     list->next->prev = node;
