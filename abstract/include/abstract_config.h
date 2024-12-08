@@ -17,4 +17,5 @@
 
 /*ASYNC_FUNC tag function will run in async mode*/
 #define ASYNC_FUNC
+
 #endif /*BASE_CONFIG_H*/

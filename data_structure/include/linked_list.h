@@ -31,14 +31,14 @@ static bool list_is_list_head(struct list_node *list, struct list_node *head)
     }
 }
 
-struct list_node *list_init(struct list_node *head)
+static struct list_node *list_init(struct list_node *head)
 {
     head->next = head;
     head->prev = head;
     return head;
 }
 
-ALLOC_MEM_FUNC base_error_t list_add_tail(struct list_node *list, void *data)
+ALLOC_MEM_FUNC static  base_error_t list_add_tail(struct list_node *list, void *data)
 {
     if (list == NULL || data == NULL)
     {
@@ -60,7 +60,7 @@ ALLOC_MEM_FUNC base_error_t list_add_tail(struct list_node *list, void *data)
     return kERROR;
 }
 
-ALLOC_MEM_FUNC base_error_t list_add_head(struct list_node *list, void *data)
+ALLOC_MEM_FUNC static base_error_t list_add_head(struct list_node *list, void *data)
 {
     if (list == NULL || data == NULL)
     {
@@ -80,7 +80,7 @@ ALLOC_MEM_FUNC base_error_t list_add_head(struct list_node *list, void *data)
     return kSUCCESS;
 }
 
-struct list_node *list_ref(struct list_node *list, size_t index)
+static struct list_node *list_ref(struct list_node *list, size_t index)
 {
     if (list == NULL)
     {
@@ -99,7 +99,7 @@ struct list_node *list_ref(struct list_node *list, size_t index)
     return NULL;
 }
 
-base_error_t list_remove(struct list_node *list, struct list_node *node)
+static base_error_t list_remove(struct list_node *list, struct list_node *node)
 {
     if (list == NULL)
     {
@@ -123,7 +123,7 @@ base_error_t list_remove(struct list_node *list, struct list_node *node)
     return ret;
 }
 
-base_error_t list_remove_idx(struct list_node *list, size_t index)
+static base_error_t list_remove_idx(struct list_node *list, size_t index)
 {
     if (list == NULL)
     {
@@ -148,7 +148,7 @@ base_error_t list_remove_idx(struct list_node *list, size_t index)
     return ret;
 }
 
-int list_get_size(struct list_node *list)
+static int list_get_size(struct list_node *list)
 {
     int count = 0;
     struct list_node *tmp = list;
@@ -159,7 +159,7 @@ int list_get_size(struct list_node *list)
     return count;
 }
 
-base_error_t list_splice(struct list_node *list, struct list_node **other)
+static base_error_t list_splice(struct list_node *list, struct list_node **other)
 {
     if (list == NULL || other == NULL)
     {
@@ -172,7 +172,7 @@ base_error_t list_splice(struct list_node *list, struct list_node **other)
     return kSUCCESS;
 }
 
-base_error_t list_del(struct list_node *list)
+static base_error_t list_del(struct list_node *list)
 {
     if (list == NULL)
     {

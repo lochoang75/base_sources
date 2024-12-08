@@ -5,7 +5,6 @@
 #include <stdbool.h>
 
 #include "blogger.h"
-#include "linked_list.h"
 #define POLL_DEFAULT_EVENTS     POLLERR | POLLHUP | POLLNVAL
 #define POLL_FD_SCALE_SIZE      (100)
 #define POLL_FD_DEFAULT_SIZE    (100)
@@ -35,6 +34,7 @@ static int extend_poll_fd_size(struct pollfd **fds, size_t *iosize)
         BLOG(LOG_ERR, "Failed to allocate new size of poll array");
         return -1;
     }
+    memset(new_fds, 0, sizeof(struct pollfd) * new_size);
     memcpy(new_fds, *fds, (*iosize) * sizeof(struct pollfd));
     free(*fds);
     *fds = new_fds;
@@ -81,7 +81,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
                 event.file_path = info->file_name;
                 event.file_path_len = info->file_name_len;
                 event.user_data = info->user_data;
-                info->handler.on_read(mon->action.container, &event);
+                info->handler->on_read(mon->action.container, &event);
             }
 
             if (mon->fds[i].revents & POLLOUT)
@@ -91,7 +91,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
                 event.file_path = info->file_name;
                 event.file_path_len = info->file_name_len;
                 event.user_data = info->user_data;
-                info->handler.on_write(mon->action.container, &event);
+                info->handler->on_write(mon->action.container, &event);
             }
 
             if (mon->fds[i].revents & (POLLHUP | POLLERR | POLLNVAL))
@@ -101,7 +101,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
                 event.file_path = info->file_name;
                 event.file_path_len = info->file_name_len;
                 event.user_data = info->user_data;
-                info->handler.on_exception(mon->action.container, &event);
+                info->handler->on_exception(mon->action.container, &event);
             }
         }
     } while (!mon->is_termiated);
@@ -120,6 +120,7 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
         return -1;
     }
 
+    memset(container, 0, sizeof(struct handler_container) + info_size);
     container->info = (struct mon_request_info *)container->ext_data;
     container->fd = -1;
     copy_reqeust_info(container->info, info);
@@ -143,7 +144,7 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
     list_for_each(head, item)
     {
         container = (struct handler_container*)item->data;
-        handler = &container->info->handler;
+        handler = container->info->handler;
         fd = handler->open(container->info->file_name, container->info->user_data);
         if (fd < 0)
         {
@@ -169,6 +170,7 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
         {
             if(extend_poll_fd_size(&poll_mon->fds, &poll_mon->fd_size))
             {
+                BLOG(LOG_ERR, "Failed to extend poll fd size %d", poll_mon->fd_size);
                 return -1;
             }
         }
@@ -180,13 +182,15 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
 
 static void close_scheduler_impl(struct scheduler_action *action)
 {
-    //TODO(elliot): delete list handler first
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon *)action->container;
+    list_del(&poll_mon->container_list);
     free(action->container);
     free(action);
 }
 
 struct scheduler_action *pollfd_open_scheduler()
 {
+    BLOG_ENTER();
     struct poll_fd_mon *poll_mon = malloc(sizeof(struct poll_fd_mon));
     struct pollfd *fds = malloc(sizeof(struct pollfd) * POLL_FD_DEFAULT_SIZE);
     if (poll_mon == NULL || fds == NULL)
@@ -195,6 +199,8 @@ struct scheduler_action *pollfd_open_scheduler()
         return NULL;
     }
 
+    memset(fds, 0, sizeof(struct pollfd) * POLL_FD_DEFAULT_SIZE);
+    memset(poll_mon, 0, sizeof(struct poll_fd_mon));
     poll_mon->action.scheduler_obj = poll_mon;
     poll_mon->action.handler_register = handler_register_poll_impl;
     poll_mon->action.close_action = close_scheduler_impl;

@@ -10,6 +10,7 @@
 
 struct scheduler_mon *open_scheduler(const char *name, mon_type_t type)
 {
+    BLOG_ENTER();
     int data_size = sizeof(struct scheduler_mon) + strlen(name) + 1;
     struct scheduler_mon *mon = malloc(data_size);
     if (mon == NULL)

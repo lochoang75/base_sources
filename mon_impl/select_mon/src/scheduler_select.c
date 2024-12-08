@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include "blogger.h"
-#include"linked_list.h"
 
 struct select_fd_mon {
     struct scheduler_action action;
