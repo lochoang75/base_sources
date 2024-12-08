@@ -37,8 +37,8 @@
 #define BLOG_CRIT(fmt, ...)         blog_print(LOG_CRIT, LOG_FMT_LF(fmt), LEVEL_TAG(LOG_CRIT), FILENAME, __LINE__, ##__VA_ARGS__)
 #define BLOG_ALERT(fmt, ...)        blog_print(LOG_ALERT, LOG_FMT_LF(fmt), LEVEL_TAG(LOG_ALERT), FILENAME, __LINE__, ##__VA_ARGS__)
 #define BLOG_EMERG(fmt, ...)        blog_print(LOG_EMERG, LOG_FMT_LF(fmt), LEVEL_TAG(LOG_EMERG), FILENAME, __LINE__, ##__VA_ARGS__)
-#define BLOG_ENTER()                blog_print(LOG_INFO, LOG_FMT_LF("%s"), "Enter ...")
-#define BLOG_EXIT()                 blog_print(LOG_INFO, LOG_FMT_LF("%s"), "Leave ...")
+#define BLOG_ENTER()                blog_print(LOG_INFO, LOG_FMT_LF("%s"), LEVEL_TAG(LOG_INFO), FILENAME, __LINE__, "Enter ...")
+#define BLOG_EXIT()                 blog_print(LOG_INFO, LOG_FMT_LF("%s"), LEVEL_TAG(LOG_INFO), FILENAME, __LINE__, "Leave ...")
 
 void blog_init(int level);
 void blog_print(int level, char *fmt, ...);

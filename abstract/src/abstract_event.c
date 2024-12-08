@@ -16,6 +16,7 @@ ALLOC_MEM_FUNC struct mon_request_info *clone_request_info(struct mon_request_in
     {
         BLOG(LOG_ERR, "Unable to allocate memory");
     }
+    memset(clone, 0, sizeof(struct mon_request_info) + info->file_name_len);
     clone->file_name = clone->ext_data;
     clone->file_name_len = info->file_name_len;
     clone->open_mode = info->open_mode;
@@ -23,6 +24,55 @@ ALLOC_MEM_FUNC struct mon_request_info *clone_request_info(struct mon_request_in
     clone->user_data = info->user_data;
     memcpy(clone->file_name, info->file_name, info->file_name_len);
     return clone;
+}
+
+struct mon_request_info *make_request_info(const char *file_name, struct mon_event_handler *handler)
+{
+    if (file_name == NULL || handler == NULL)
+    {
+        BLOG(LOG_WARNING, "file name is (%p), handler (%p)", file_name, handler);
+        return NULL;
+    }
+
+    int alloc_size = sizeof(struct mon_request_info) + strlen(file_name) + 1;
+    struct mon_request_info *request_info = malloc(alloc_size);
+    if (request_info == NULL)
+    {
+        BLOG(LOG_WARNING, "Unable to allocate memory");
+        return NULL;
+    }
+    memset(request_info, 0, alloc_size);
+    request_info->file_name = request_info->ext_data;
+    request_info->file_name_len = strlen(file_name) + 1;
+    request_info->open_mode = MON_OPEN_MODE_READ | MON_OPEN_MODE_WRITE;
+    request_info->handler = handler;
+    request_info->user_data = NULL;
+    memcpy(request_info->file_name, file_name, request_info->file_name_len);
+    return request_info;
+}
+
+int set_request_open_mode(struct mon_request_info *info, mon_open_mode_t mode)
+{
+    if (info == NULL)
+    {
+        BLOG(LOG_WARNING, "Info is null, unable to set mode" );
+        return -1;
+    }
+
+    info->open_mode = mode;
+    return 0;
+}
+
+int set_request_user_data(struct mon_request_info *info, void *user_data)
+{
+    if (info == NULL)
+    {
+        BLOG(LOG_WARNING, "Info is null, unable to set user_data" );
+        return -1;
+    }
+
+    info->user_data = user_data;
+    return 0;
 }
 
 void copy_reqeust_info(struct mon_request_info *dst, struct mon_request_info *src)

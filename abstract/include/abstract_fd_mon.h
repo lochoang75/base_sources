@@ -12,9 +12,9 @@ struct scheduler_action{
 };
 
 struct scheduler_mon {
-    char *scheduler_name;
     mon_type_t scheduler_type;
     struct scheduler_action *action;
+    char scheduler_name[0];
 };
 
 struct scheduler_mon * open_scheduler(const char *name, mon_type_t type);
