@@ -5,7 +5,7 @@ set(abstract_src ${CMAKE_CURRENT_SOURCE_DIR}/src/abstract_event.c
                  )
 add_library(${library_name} STATIC ${abstract_src})
 target_include_directories(${library_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
-                                                    ${PROJECT_SOURCE_DIR}/mon_impl/include)
+                                                    ${PROJECT_SOURCE_DIR}/fdmon_impl/include)
 if (BUILD_TESTS)
 add_subdirectory(test)
 endif (BUILD_TESTS)

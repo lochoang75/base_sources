@@ -3,7 +3,7 @@
 #include "abstract_enum.h"
 #include "abstract_event.h"
 struct scheduler_action{
-    void *scheduler_obj;
+    void *mon_obj;
     scheduler_mon_t *container;
     void (*close_action)(struct scheduler_action *action);
     int (*handler_register)(struct scheduler_action *action, struct mon_request_info *handler);

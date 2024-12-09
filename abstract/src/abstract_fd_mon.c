@@ -4,9 +4,7 @@
 #include "abstract_string_helper.h"
 
 #include "blogger.h"
-#include "scheduler_epollfd.h"
-#include "scheduler_select.h"
-#include "scheduler_pollfd.h"
+#include "mon_factory.h"
 
 struct scheduler_mon *open_scheduler(const char *name, mon_type_t type)
 {
@@ -21,28 +19,12 @@ struct scheduler_mon *open_scheduler(const char *name, mon_type_t type)
 
     memset(mon, 0, data_size);
     memcpy(mon->scheduler_name, name, strlen(name));
-    switch (type)
+    mon->action = make_fd_mon(type);
+    if (mon->action != NULL)
     {
-    case MON_USE_EPOLL:
-        mon->scheduler_type = MON_USE_EPOLL;
-        mon->action = epollfd_open_scheduler();
+        mon->scheduler_type = type;
         mon->action->container = mon;
-        break;
-    case MON_USE_POLL:
-        mon->scheduler_type = MON_USE_POLL;
-        mon->action = pollfd_open_scheduler();
-        mon->action->container = mon;
-        break;
-    case MON_USE_SELECT:
-        mon->scheduler_type = MON_USE_SELECT;
-        mon->action = selectfd_open_scheduler();
-        mon->action->container = mon;
-        break;
-    default:
-        BLOG(LOG_ERR, "Unable to open scheduler for type: %s", fd_mon_to_string(type));
-        break;
-    }
-    if (mon->action == NULL)
+    } else
     {
         free(mon);
         mon = NULL;

@@ -1,4 +1,4 @@
-#include "scheduler_pollfd.h"
+#include "pollfd_mon.h"
 
 #include <stdlib.h>
 #include <poll.h>
@@ -111,7 +111,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
 static int handler_register_poll_impl(struct scheduler_action *action, struct mon_request_info *info)
 {
     int ret = 0;
-    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->scheduler_obj;
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
     size_t info_size =  get_request_info_size(info);
     struct handler_container *container = malloc(sizeof(struct handler_container) + info_size);
     if (container == NULL)
@@ -135,7 +135,7 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
 
 static int start_scheduler_impl(struct scheduler_action *action __attribute__((unused)))
 {
-    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->scheduler_obj;
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
     struct handler_container * container = NULL;
     struct mon_event_handler *handler = NULL;
     struct list_node *item;
@@ -188,7 +188,7 @@ static void close_scheduler_impl(struct scheduler_action *action)
     free(action);
 }
 
-struct scheduler_action *pollfd_open_scheduler()
+struct scheduler_action *pollfd_open_mon()
 {
     BLOG_ENTER();
     struct poll_fd_mon *poll_mon = malloc(sizeof(struct poll_fd_mon));
@@ -201,7 +201,7 @@ struct scheduler_action *pollfd_open_scheduler()
 
     memset(fds, 0, sizeof(struct pollfd) * POLL_FD_DEFAULT_SIZE);
     memset(poll_mon, 0, sizeof(struct poll_fd_mon));
-    poll_mon->action.scheduler_obj = poll_mon;
+    poll_mon->action.mon_obj = poll_mon;
     poll_mon->action.handler_register = handler_register_poll_impl;
     poll_mon->action.close_action = close_scheduler_impl;
     poll_mon->action.start_scheduler = start_scheduler_impl;
