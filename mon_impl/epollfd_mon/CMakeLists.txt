@@ -1,5 +1,0 @@
-set(library_name epollfd_mon)
-set(epollfd_mon_src ${CMAKE_CURRENT_SOURCE_DIR}/src/scheduler_epollfd.c)
-add_library(${library_name} STATIC ${epollfd_mon_src})
-target_link_libraries(${library_name} PRIVATE blogger)
-target_include_directories(${library_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

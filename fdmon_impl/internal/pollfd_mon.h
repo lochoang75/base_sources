@@ -3,5 +3,5 @@
 #include "abstract_fd_mon.h"
 #include "linked_list.h"
 
-struct scheduler_action *pollfd_open_scheduler();
+struct scheduler_action *pollfd_open_mon();
 #endif /*SCHEDULLER_POLLFD_H*/

@@ -1,11 +1,9 @@
-add_executable(test_scheduler_pollfd ${CMAKE_CURRENT_SOURCE_DIR}/scheduler_pollfd_test.c)
-target_link_libraries(test_scheduler_pollfd blogger
+add_executable(test_pollfd_mon ${CMAKE_CURRENT_SOURCE_DIR}/test_pollfd_mon.c)
+target_link_libraries(test_pollfd_mon blogger
                                             base_abstract
-                                            pollfd_mon
-                                            epollfd_mon
-                                            selectfd_mon
+                                            fdmon_impl
                                             signal_handler)
-target_include_directories(test_scheduler_pollfd PRIVATE    ${PROJECT_SOURCE_DIR}/abstract/include
+target_include_directories(test_pollfd_mon PRIVATE    ${PROJECT_SOURCE_DIR}/abstract/include
                                                             ${PROJECT_SOURCE_DIR}/logger/include
                                                             ${PROJECT_SOURCE_DIR}/signal_handler/include
                                                             )

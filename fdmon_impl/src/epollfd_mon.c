@@ -1,4 +1,4 @@
-#include "scheduler_epollfd.h"
+#include "epollfd_mon.h"
 #include <stdlib.h>
 
 #include "blogger.h"
@@ -20,11 +20,11 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
 static void close_scheduler_impl(struct scheduler_action *action)
 {
     //TODO(elliot): delete list handler first
-    free(action->scheduler_obj);
+    free(action->mon_obj);
     free(action);
 }
 
-struct scheduler_action *epollfd_open_scheduler()
+struct scheduler_action *epollfd_open_mon()
 {
     struct epoll_fd_mon *epoll_mon = malloc(sizeof(struct epoll_fd_mon));
     if (epoll_mon == NULL)
@@ -33,7 +33,7 @@ struct scheduler_action *epollfd_open_scheduler()
         return NULL;
     }
 
-    epoll_mon->action.scheduler_obj = epoll_mon;
+    epoll_mon->action.mon_obj = epoll_mon;
     epoll_mon->action.handler_register = handler_register_epoll_impl;
     epoll_mon->action.close_action = close_scheduler_impl;
     epoll_mon->action.start_scheduler = start_scheduler_impl;
