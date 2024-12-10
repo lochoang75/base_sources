@@ -9,7 +9,7 @@
 #define POLL_FD_SCALE_SIZE      (100)
 #define POLL_FD_DEFAULT_SIZE    (100)
 
-struct handler_container {
+struct pollfd_event_handler {
     int fd;
     struct mon_request_info *info;
     char ext_data[0];
@@ -17,7 +17,7 @@ struct handler_container {
 
 struct poll_fd_mon {
     struct scheduler_action action;
-    struct list_node container_list;
+    struct list_node handler_list;
     struct pollfd *fds;
     size_t fd_count;
     size_t fd_size;
@@ -44,14 +44,14 @@ static int extend_poll_fd_size(struct pollfd **fds, size_t *iosize)
 
 static struct mon_request_info *get_mon_info_base_on_fd(struct list_node *head, int fd)
 {
-    struct handler_container *container = NULL;
+    struct pollfd_event_handler *event_handler = NULL;
     struct list_node *item = NULL;
     list_for_each(head, item)
     {
-        container = item->data;
-        if (container->fd == fd)
+        event_handler = item->data;
+        if (event_handler->fd == fd)
         {
-            return container->info;
+            return event_handler->info;
         }
     }
 
@@ -76,7 +76,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
         {
             if (mon->fds[i].revents & POLLIN)
             {
-                info = get_mon_info_base_on_fd(&mon->container_list, mon->fds[i].fd);
+                info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
                 event.fd = mon->fds[i].fd;
                 event.file_path = info->file_name;
                 event.file_path_len = info->file_name_len;
@@ -86,7 +86,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
 
             if (mon->fds[i].revents & POLLOUT)
             {
-                info = get_mon_info_base_on_fd(&mon->container_list, mon->fds[i].fd);
+                info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
                 event.fd = mon->fds[i].fd;
                 event.file_path = info->file_name;
                 event.file_path_len = info->file_name_len;
@@ -96,7 +96,7 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
 
             if (mon->fds[i].revents & (POLLHUP | POLLERR | POLLNVAL))
             {
-                info = get_mon_info_base_on_fd(&mon->container_list, mon->fds[i].fd);
+                info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
                 event.fd = mon->fds[i].fd;
                 event.file_path = info->file_name;
                 event.file_path_len = info->file_name_len;
@@ -112,19 +112,19 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
 {
     int ret = 0;
     struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
-    size_t info_size =  get_request_info_size(info);
-    struct handler_container *container = malloc(sizeof(struct handler_container) + info_size);
-    if (container == NULL)
+    size_t data_size = sizeof(struct pollfd_event_handler) + get_request_info_size(info);
+    struct pollfd_event_handler *event_handler = malloc(data_size);
+    if (event_handler == NULL)
     {
         BLOG(LOG_ERR, "Failed to allocate memory");
         return -1;
     }
 
-    memset(container, 0, sizeof(struct handler_container) + info_size);
-    container->info = (struct mon_request_info *)container->ext_data;
-    container->fd = -1;
-    copy_reqeust_info(container->info, info);
-    base_error_t error = list_add_tail(&poll_mon->container_list, container);
+    memset(event_handler, 0, data_size);
+    event_handler->info = (struct mon_request_info *)event_handler->ext_data;
+    event_handler->fd = -1;
+    copy_reqeust_info(event_handler->info, info);
+    base_error_t error = list_add_tail(&poll_mon->handler_list, event_handler);
     if (error != kSUCCESS)
     {
         BLOG(LOG_ERR, "Unable to add handler, error %d", error);
@@ -136,32 +136,32 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
 static int start_scheduler_impl(struct scheduler_action *action __attribute__((unused)))
 {
     struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
-    struct handler_container * container = NULL;
-    struct mon_event_handler *handler = NULL;
+    struct pollfd_event_handler *event_handler= NULL;
+    struct mon_event_handler *mon_handler = NULL;
     struct list_node *item;
-    struct list_node *head = &poll_mon->container_list;
+    struct list_node *head = &poll_mon->handler_list;
     int fd = -1;
     list_for_each(head, item)
     {
-        container = (struct handler_container*)item->data;
-        handler = container->info->handler;
-        fd = handler->open(container->info->file_name, container->info->user_data);
+        event_handler = (struct pollfd_event_handler*)item->data;
+        mon_handler = event_handler->info->handler;
+        fd = mon_handler->open(event_handler->info->file_name, event_handler->info->user_data);
         if (fd < 0)
         {
             //TODO(elliot): retry is required
-            BLOG(LOG_WARNING, "Failed to open file at path %s", container->info->file_name);
+            BLOG(LOG_WARNING, "Failed to open file at path %s", event_handler->info->file_name);
             continue;
         }
 
-        container->fd = fd;
+        event_handler->fd = fd;
         poll_mon->fds[poll_mon->fd_count].fd = fd;
         poll_mon->fds[poll_mon->fd_count].events = POLL_DEFAULT_EVENTS;
-        if (container->info->open_mode | MON_OPEN_MODE_READ)
+        if (event_handler->info->open_mode | MON_OPEN_MODE_READ)
         {
             poll_mon->fds[poll_mon->fd_count].events |= POLLIN;
         }
 
-        if (container->info->open_mode | MON_OPEN_MODE_WRITE)
+        if (event_handler->info->open_mode | MON_OPEN_MODE_WRITE)
         {
             poll_mon->fds[poll_mon->fd_count].events |= POLLOUT;
         }
@@ -183,7 +183,7 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
 static void close_scheduler_impl(struct scheduler_action *action)
 {
     struct poll_fd_mon *poll_mon = (struct poll_fd_mon *)action->container;
-    list_del(&poll_mon->container_list);
+    list_del(&poll_mon->handler_list);
     free(action->container);
     free(action);
 }
@@ -209,6 +209,6 @@ struct scheduler_action *pollfd_open_mon()
     poll_mon->fd_count = 0;
     poll_mon->fds = fds;
     poll_mon->is_termiated = true;
-    list_init(&poll_mon->container_list);
+    list_init(&poll_mon->handler_list);
     return &poll_mon->action;
 }
