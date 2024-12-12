@@ -74,33 +74,23 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
 
         for (size_t i = 0; i < mon->fd_count; i++)
         {
+            info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
+            event.fd = mon->fds[i].fd;
+            event.file_path = info->file_name;
+            event.file_path_len = info->file_name_len;
+            event.user_data = info->user_data;
             if (mon->fds[i].revents & POLLIN)
             {
-                info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
-                event.fd = mon->fds[i].fd;
-                event.file_path = info->file_name;
-                event.file_path_len = info->file_name_len;
-                event.user_data = info->user_data;
                 info->handler->on_read(mon->action.container, &event);
             }
 
             if (mon->fds[i].revents & POLLOUT)
             {
-                info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
-                event.fd = mon->fds[i].fd;
-                event.file_path = info->file_name;
-                event.file_path_len = info->file_name_len;
-                event.user_data = info->user_data;
                 info->handler->on_write(mon->action.container, &event);
             }
 
             if (mon->fds[i].revents & (POLLHUP | POLLERR | POLLNVAL))
             {
-                info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
-                event.fd = mon->fds[i].fd;
-                event.file_path = info->file_name;
-                event.file_path_len = info->file_name_len;
-                event.user_data = info->user_data;
                 info->handler->on_exception(mon->action.container, &event);
             }
         }
@@ -156,12 +146,12 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
         event_handler->fd = fd;
         poll_mon->fds[poll_mon->fd_count].fd = fd;
         poll_mon->fds[poll_mon->fd_count].events = POLL_DEFAULT_EVENTS;
-        if (event_handler->info->open_mode | MON_OPEN_MODE_READ)
+        if (event_handler->info->open_mode & MON_OPEN_MODE_READ)
         {
             poll_mon->fds[poll_mon->fd_count].events |= POLLIN;
         }
 
-        if (event_handler->info->open_mode | MON_OPEN_MODE_WRITE)
+        if (event_handler->info->open_mode & MON_OPEN_MODE_WRITE)
         {
             poll_mon->fds[poll_mon->fd_count].events |= POLLOUT;
         }
