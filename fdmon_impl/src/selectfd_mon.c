@@ -39,30 +39,22 @@ static int start_select(struct select_fd_mon *fdmon)
     {
         struct select_event_handler *event_handler = (struct select_event_handler*)item->data;
         info = event_handler->info;
+        event.fd = event_handler->fd;
+        event.file_path = info->file_name;
+        event.file_path_len = info->file_name_len;
+        event.user_data = info->user_data;
         if (FD_ISSET(event_handler->fd, &fdmon->read_fds))
         {
-            event.fd = event_handler->fd;
-            event.file_path = info->file_name;
-            event.file_path_len = info->file_name_len;
-            event.user_data = info->user_data;
             info->handler->on_read(fdmon->action.container, &event);
         }
 
         if (FD_ISSET(event_handler->fd, &fdmon->write_fds))
         {
-            event.fd = event_handler->fd;
-            event.file_path = info->file_name;
-            event.file_path_len = info->file_name_len;
-            event.user_data = info->user_data;
             info->handler->on_write(fdmon->action.container, &event);
         }
 
         if (FD_ISSET(event_handler->fd, &fdmon->except_fds))
         {
-            event.fd = event_handler->fd;
-            event.file_path = info->file_name;
-            event.file_path_len = info->file_name_len;
-            event.user_data = info->user_data;
             info->handler->on_exception(fdmon->action.container, &event);
         }
     }
@@ -115,12 +107,12 @@ static int start_scheduler_impl(struct scheduler_action *action)
 
         event_handler->fd = fd;
         select_mon->max_fd = (select_mon->max_fd > fd)? select_mon->max_fd : fd;
-        if (event_handler->info->open_mode | MON_OPEN_MODE_READ)
+        if (event_handler->info->open_mode & MON_OPEN_MODE_READ)
         {
             FD_SET(fd, &select_mon->read_fds);
         }
 
-        if (event_handler->info->open_mode | MON_OPEN_MODE_WRITE)
+        if (event_handler->info->open_mode & MON_OPEN_MODE_WRITE)
         {
             FD_SET(fd, &select_mon->write_fds);
         }
