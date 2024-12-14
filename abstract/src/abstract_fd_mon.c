@@ -42,6 +42,17 @@ int register_handler(struct scheduler_mon *scheduler, struct mon_request_info *i
     return scheduler->action->handler_register(scheduler->action, info);
 }
 
+int unregister_handler(struct scheduler_mon *scheduler, int fd)
+{
+    BLOG_ENTER();
+    if (scheduler == NULL)
+    {
+        BLOG(LOG_ERR, "invalid scheduler (%p), handler (%d)", scheduler, fd);
+        return -1;
+    }
+    return scheduler->action->handler_unregister(scheduler->action, fd);
+}
+
 void close_scheduler(struct scheduler_mon *scheduler)
 {
     if (scheduler == NULL || scheduler->action == NULL)
@@ -49,6 +60,7 @@ void close_scheduler(struct scheduler_mon *scheduler)
         return;
     }
     scheduler->action->close_action(scheduler->action);
+    BLOG(LOG_INFO, "Free scheduler");
     free(scheduler);
 }
 

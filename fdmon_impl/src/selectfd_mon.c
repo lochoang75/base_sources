@@ -9,6 +9,7 @@
 struct select_event_handler {
     int fd;
     struct mon_request_info *info;
+    struct list_node node;
     char ext_data[0];
 };
 
@@ -37,7 +38,7 @@ static int start_select(struct select_fd_mon *fdmon)
     struct mon_request_info *info = NULL;
     list_for_each(head, item)
     {
-        struct select_event_handler *event_handler = (struct select_event_handler*)item->data;
+        struct select_event_handler *event_handler = container_of(item, struct select_event_handler, node);
         info = event_handler->info;
         event.fd = event_handler->fd;
         event.file_path = info->file_name;
@@ -77,13 +78,18 @@ static int handler_register_select_impl(struct scheduler_action *action, struct 
     event_handler->info = (struct mon_request_info *)event_handler->ext_data;
     event_handler->fd = -1;
     copy_reqeust_info(event_handler->info, info);
-    base_error_t error = list_add_tail(&select_mon->handler_list, event_handler);
+    base_error_t error = list_add_tail(&select_mon->handler_list, &event_handler->node);
     if (error != kSUCCESS)
     {
         BLOG(LOG_ERR, "Failed to register handler (%p), ret %d", error);
         ret = -1;
     }
     return ret;
+}
+
+static int handler_unregister_select_impl(struct scheduler_action *action __attribute__((unused)), int fd __attribute__((unused)))
+{
+    return 0;
 }
 
 static int start_scheduler_impl(struct scheduler_action *action)
@@ -96,7 +102,7 @@ static int start_scheduler_impl(struct scheduler_action *action)
     int fd = -1;
     list_for_each(head, item)
     {
-        event_handler = (struct select_event_handler*) item->data;
+        event_handler = container_of(item, struct select_event_handler, node);
         mon_handler = event_handler->info->handler;
         fd = mon_handler->open(event_handler->info->file_name, event_handler->info->user_data);
         if (fd < 0)
@@ -125,10 +131,17 @@ static int start_scheduler_impl(struct scheduler_action *action)
 
 static void close_scheduler_impl(struct scheduler_action *action)
 {
-    struct select_fd_mon *select_mon = (struct select_fd_mon*)action->mon_obj;
-    list_del(&select_mon->handler_list);
-    free(action->mon_obj);
-    free(action);
+    struct select_fd_mon *select_mon = action->mon_obj;
+    struct list_node *item = NULL;
+    BLOG(LOG_INFO, "Free handler list");
+    list_for_each(&select_mon->handler_list, item)
+    {
+        list_remove(item);
+        item = item->prev;
+        free(item);
+    }
+    BLOG(LOG_INFO, "Free fd mon");
+    free(select_mon);
 }
 
 struct scheduler_action *selectfd_open_mon()
@@ -143,6 +156,7 @@ struct scheduler_action *selectfd_open_mon()
     memset(select_mon, 0, sizeof(struct select_fd_mon));
     select_mon->action.mon_obj = select_mon;
     select_mon->action.handler_register = handler_register_select_impl;
+    select_mon->action.handler_unregister = handler_unregister_select_impl;
     select_mon->action.close_action = close_scheduler_impl;
     select_mon->action.start_scheduler = start_scheduler_impl;
     select_mon->is_termiated = false;

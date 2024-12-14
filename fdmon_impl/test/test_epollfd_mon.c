@@ -10,9 +10,9 @@ static int open_file_request(const char *file_name __attribute__((unused)), void
     return STDIN_FILENO;
 }
 
-static void close_file_request(int fd, void *user_data __attribute__((unused)))
+static void close_file_request(int fd, void *user_data)
 {
-    close(fd);
+    BLOG(LOG_INFO, "Request to close fd %d, use data (%p)", fd, user_data);
 }
 
 static int on_exception_handler(scheduler_mon_t *scheduler __attribute__((unused)), struct mon_event *event __attribute__((unused)))
@@ -21,10 +21,11 @@ static int on_exception_handler(scheduler_mon_t *scheduler __attribute__((unused
     return 0;
 }
 
-static int on_read_handler(scheduler_mon_t *scheduler __attribute__((unused)), struct mon_event *event __attribute((unused)))
+static int on_read_handler(scheduler_mon_t *scheduler , struct mon_event *event)
 {
     BLOG(LOG_INFO, "File read ready callback");
     usleep(100000);
+    unregister_handler(scheduler, event->fd);
     return 0;
 }
 
@@ -68,6 +69,7 @@ int main()
     set_request_open_mode(info, MON_OPEN_MODE_READ);
     BLOG(LOG_INFO, "Regiser handler");
     ret = register_handler(mon, info);
+    free(info);
     if (ret > 0)
     {
         BLOG(LOG_ERR, "Failed to register handler");
@@ -76,6 +78,9 @@ int main()
 
     BLOG(LOG_INFO, "Start sched");
     start_scheduler(mon);
+    BLOG(LOG_INFO, "Close sched");
+    close_scheduler(mon);
     BLOG_EXIT();
+    blog_deinit();
     return 0;
 }

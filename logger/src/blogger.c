@@ -11,6 +11,7 @@
 static char log_buffer[LOG_BUFFER_SIZE];
 #else
 static char *log_buffer = NULL;
+static int must_dealloc = 1;
 #endif
 #ifndef USE_SYSLOG
 static int log_level = LOG_INFO;
@@ -42,6 +43,19 @@ void blog_init(int level)
         fprintf(stderr, "Unable to allocate buffer for logger, use static\n");
         static char slog_buffer[LOG_BUFFER_SIZE] = {'\0'};
         log_buffer = slog_buffer;
+    } else
+    {
+        must_dealloc = 1;
+    }
+#endif
+}
+
+void blog_deinit(void)
+{
+#ifndef USE_STATIC_BUFFER
+    if (must_dealloc)
+    {
+        free(log_buffer);
     }
 #endif
 }

@@ -13,6 +13,7 @@
 struct epoll_event_handler {
     int fd;
     struct epoll_event event;
+    struct list_node node;
     struct mon_request_info info[0];
 };
 
@@ -78,11 +79,41 @@ static int handler_register_epoll_impl(struct scheduler_action *action , struct 
     }
     memset(event_handler, 0, data_size);
     copy_reqeust_info(event_handler->info, info);
-    base_error_t error = list_add_tail(&epoll_mon->handler_list, event_handler);
+    base_error_t error = list_add_tail(&epoll_mon->handler_list, &event_handler->node);
     if (error != kSUCCESS)
     {
         BLOG(LOG_ERR, "Failed to register handler to list");
         return ret;
+    }
+    return 0;
+}
+
+static int handler_unregister_epoll_impl(struct scheduler_action *action, int fd)
+{
+    struct epoll_fd_mon *epoll_mon = (struct epoll_fd_mon*)action->mon_obj;
+    int ret = epoll_ctl(epoll_mon->epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+    if (ret != 0)
+    {
+        BLOG(LOG_ERR, "Try remove fd (%d) return %d, errno: %s", fd, ret, strerror(errno));
+        return ret;
+    }
+
+    struct list_node *head = &epoll_mon->handler_list;
+    struct list_node *item = NULL;
+    struct epoll_event_handler *epoll_ev_handler = NULL;
+    list_for_each(head, item)
+    {
+        epoll_ev_handler = container_of(item, struct epoll_event_handler, node);
+        if (epoll_ev_handler->fd == fd)
+        {
+            list_remove(item);
+            item = item->prev;
+            BLOG(LOG_INFO, "Handler at fd %d (%p) removed", fd, epoll_ev_handler);
+            epoll_ev_handler->info->handler->close(fd, epoll_ev_handler->info->user_data);
+            epoll_ev_handler->info->handler->on_terminate(action->container, epoll_ev_handler->info->user_data);
+            free(epoll_ev_handler);
+            break;
+        }
     }
     return 0;
 }
@@ -98,7 +129,7 @@ static int start_scheduler_impl(struct scheduler_action *action)
     int ret = 0;
     list_for_each(head, item)
     {
-        epoll_ev_handler = (struct epoll_event_handler*)item->data;
+        epoll_ev_handler = container_of(item, struct epoll_event_handler, node);;
         mon_ev_handler = epoll_ev_handler->info->handler;
         fd = mon_ev_handler->open(epoll_ev_handler->info->file_name, epoll_ev_handler->info->user_data);
         if (fd < 0)
@@ -132,9 +163,16 @@ static int start_scheduler_impl(struct scheduler_action *action)
 static void close_scheduler_impl(struct scheduler_action *action)
 {
     struct epoll_fd_mon *epoll_mon = (struct epoll_fd_mon*)action->mon_obj;
-    list_del(&epoll_mon->handler_list);
-    free(action->mon_obj);
-    free(action);
+    struct list_node *item = NULL;
+    BLOG(LOG_INFO, "Free handler list");
+    list_for_each(&epoll_mon->handler_list, item)
+    {
+        list_remove(item);
+        item = item->prev;
+        free(item);
+    }
+    BLOG(LOG_INFO, "Free fd mon");
+    free(epoll_mon);
 }
 
 struct scheduler_action *epollfd_open_mon()
@@ -156,6 +194,7 @@ struct scheduler_action *epollfd_open_mon()
     epoll_mon->action.handler_register = handler_register_epoll_impl;
     epoll_mon->action.close_action = close_scheduler_impl;
     epoll_mon->action.start_scheduler = start_scheduler_impl;
+    epoll_mon->action.handler_unregister = handler_unregister_epoll_impl;
     list_init(&epoll_mon->handler_list);
     return &epoll_mon->action;
 }
