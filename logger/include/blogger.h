@@ -43,5 +43,6 @@
 void blog_init(int level);
 void blog_print(int level, char *fmt, ...);
 const char* blog_get_level_tag(int level);
+void blog_deinit();
 
 #endif /*BLOGGER_H*/

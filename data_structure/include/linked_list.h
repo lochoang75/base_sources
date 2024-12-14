@@ -8,16 +8,17 @@
 #include "abstract_errors.h"
 #include "blogger.h"
 
+#define container_of(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
+
 #define list_for_each(list, pos) \
-        for(pos = list->next; !list_is_list_head(list, pos); pos = pos->next)
+        for(pos = (list)->next; !list_is_list_head((list), pos); pos = pos->next)
 
 #define list_forech_reverse(list, pos) \
-        for(pos = list->prev; !list_is_list_head(list, pos); pos = pos->prev)
+        for(pos = (list)->prev; !list_is_list_head((list), pos); pos = pos->prev)
 
 struct list_node {
     struct list_node *next;
     struct list_node *prev;
-    void *data;
 };
 
 static bool list_is_list_head(struct list_node *list, struct list_node *head)
@@ -38,19 +39,13 @@ static struct list_node *list_init(struct list_node *head)
     return head;
 }
 
-ALLOC_MEM_FUNC static  base_error_t list_add_tail(struct list_node *list, void *data)
+static  base_error_t list_add_tail(struct list_node *list, struct list_node *node)
 {
-    if (list == NULL || data == NULL)
+    if (list == NULL || node == NULL)
     {
         return kINVALID_MEM;
     }
 
-    struct list_node *node = malloc(sizeof(struct list_node));
-    if (node == NULL)
-    {
-        return kNO_MEM;
-    }
-    node->data = data;
     node->next = list;
     node->prev = list->prev;
     list->prev->next = node;
@@ -60,19 +55,13 @@ ALLOC_MEM_FUNC static  base_error_t list_add_tail(struct list_node *list, void *
     return kERROR;
 }
 
-ALLOC_MEM_FUNC static base_error_t list_add_head(struct list_node *list, void *data)
+static base_error_t list_add_head(struct list_node *list, struct list_node *node)
 {
-    if (list == NULL || data == NULL)
+    if (list == NULL || node == NULL)
     {
         return kINVALID_MEM;
     }
 
-    struct list_node *node = malloc(sizeof(struct list_node));
-    if (node == NULL)
-    {
-        return kNO_MEM;
-    }
-    node->data = data;
     node->next = list->next;
     node->prev = list;
     list->next->prev = node;
@@ -99,52 +88,13 @@ static struct list_node *list_ref(struct list_node *list, size_t index)
     return NULL;
 }
 
-static base_error_t list_remove(struct list_node *list, struct list_node *node)
+static base_error_t list_remove(struct list_node *node)
 {
-    if (list == NULL)
-    {
-        return kINVALID_MEM;
-    }
-
     base_error_t ret = kINVALID_MEM;
-    struct list_node *tmp = list;
-    struct list_node *prev = NULL;
-    for (tmp = list; !list_is_list_head(list, tmp); tmp = tmp->next)
-    {
-        if (tmp == node)
-        {
-            prev->next = tmp->next;
-            free(tmp);
-            ret = kSUCCESS;
-            break;
-        }
-        prev = tmp;
-    }
-    return ret;
-}
-
-static base_error_t list_remove_idx(struct list_node *list, size_t index)
-{
-    if (list == NULL)
-    {
-        return kINVALID_MEM;
-    }
-
-    base_error_t ret = kINVALID_MEM;
-    struct list_node *tmp = list;
-    struct list_node *prev = NULL;
-    for (tmp = list; !list_is_list_head(list, tmp); tmp = tmp->next)
-    {
-        if (index == 0)
-        {
-            prev->next = tmp->next;
-            free(tmp);
-            ret = kSUCCESS;
-            break;
-        }
-        index --;
-        prev = tmp;
-    }
+    struct list_node *prev = node->prev;
+    struct list_node *next = node->next;
+    prev->next = next;
+    next->prev = prev;
     return ret;
 }
 
@@ -169,27 +119,6 @@ static base_error_t list_splice(struct list_node *list, struct list_node **other
     list->prev->next = (*other)->next;
     list->prev = other_tail;
     *other = NULL;
-    return kSUCCESS;
-}
-
-static base_error_t list_del(struct list_node *list)
-{
-    if (list == NULL)
-    {
-        return kINVALID_MEM;
-    }
-    struct list_node *tmp = list->next;
-    do {
-        if (tmp == NULL || tmp == list)
-        {
-            break;
-        } else
-        {
-            struct list_node *tmp_next = tmp->next;
-            free(tmp);
-            tmp = tmp_next;
-        }
-    } while (true);
     return kSUCCESS;
 }
 #endif /*LINKED_LIST_H*/

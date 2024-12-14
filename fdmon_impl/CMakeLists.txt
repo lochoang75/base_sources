@@ -10,4 +10,5 @@ target_include_directories(${library_name} PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/
     )
 target_link_libraries(${library_name} blogger base_abstract)
 if (BUILD_TESTS)
+add_subdirectory(test)
 endif(BUILD_TESTS)
