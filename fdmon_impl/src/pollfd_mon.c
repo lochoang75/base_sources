@@ -115,7 +115,7 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
     memset(event_handler, 0, data_size);
     event_handler->info = (struct mon_request_info *)event_handler->ext_data;
     event_handler->fd = -1;
-    copy_reqeust_info(event_handler->info, info);
+    copy_request_info(event_handler->info, info);
     base_error_t error = list_add_tail(&poll_mon->handler_list, &event_handler->node);
     if (error != kSUCCESS)
     {
@@ -154,12 +154,12 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
         event_handler->fd = fd;
         poll_mon->fds[poll_mon->fd_count].fd = fd;
         poll_mon->fds[poll_mon->fd_count].events = POLL_DEFAULT_EVENTS;
-        if (event_handler->info->open_mode & MON_OPEN_MODE_READ)
+        if (event_handler->info->open_mode & eMON_OPEN_MODE_READ)
         {
             poll_mon->fds[poll_mon->fd_count].events |= POLLIN;
         }
 
-        if (event_handler->info->open_mode & MON_OPEN_MODE_WRITE)
+        if (event_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
         {
             poll_mon->fds[poll_mon->fd_count].events |= POLLOUT;
         }

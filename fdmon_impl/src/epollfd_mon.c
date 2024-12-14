@@ -78,7 +78,7 @@ static int handler_register_epoll_impl(struct scheduler_action *action , struct 
         return ret;
     }
     memset(event_handler, 0, data_size);
-    copy_reqeust_info(event_handler->info, info);
+    copy_request_info(event_handler->info, info);
     base_error_t error = list_add_tail(&epoll_mon->handler_list, &event_handler->node);
     if (error != kSUCCESS)
     {
@@ -131,20 +131,26 @@ static int start_scheduler_impl(struct scheduler_action *action)
     {
         epoll_ev_handler = container_of(item, struct epoll_event_handler, node);;
         mon_ev_handler = epoll_ev_handler->info->handler;
-        fd = mon_ev_handler->open(epoll_ev_handler->info->file_name, epoll_ev_handler->info->user_data);
-        if (fd < 0)
+        if (epoll_ev_handler->info->fd < 0)
         {
-            BLOG(LOG_WARNING, "Failed to open fd for file %s", epoll_ev_handler->info->file_name);
-            continue;
+            fd = mon_ev_handler->open(epoll_ev_handler->info->file_name, epoll_ev_handler->info->user_data);
+            if (fd < 0)
+            {
+                BLOG(LOG_WARNING, "Failed to open fd for file %s", epoll_ev_handler->info->file_name);
+                continue;
+            }
+        } else
+        {
+            fd = epoll_ev_handler->info->fd;
         }
         epoll_ev_handler->fd = fd;
         epoll_ev_handler->event.data.ptr = epoll_ev_handler;
         epoll_ev_handler->event.events = EPOLLERR;
-        if (epoll_ev_handler->info->open_mode & MON_OPEN_MODE_READ)
+        if (epoll_ev_handler->info->open_mode & eMON_OPEN_MODE_READ)
         {
             epoll_ev_handler->event.events |= EPOLLIN;
         }
-        if (epoll_ev_handler->info->open_mode & MON_OPEN_MODE_WRITE)
+        if (epoll_ev_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
         {
             epoll_ev_handler->event.events |= EPOLLOUT;
         }
