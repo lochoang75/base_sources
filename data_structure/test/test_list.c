@@ -17,7 +17,6 @@ static void print_list_data(struct list_node *head)
         node_data = container_of(item, struct node_data, node);
         BLOG(LOG_DEBUG, "%d", node_data->data);
     }
-
 }
 
 int main()

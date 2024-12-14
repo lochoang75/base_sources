@@ -12,13 +12,13 @@ struct scheduler_action *make_fd_mon(mon_type_t type)
     struct scheduler_action *action = NULL;
     switch (type)
     {
-    case MON_USE_EPOLL:
+    case eMON_USE_EPOLL:
         action = epollfd_open_mon();
         break;
-    case MON_USE_POLL:
+    case eMON_USE_POLL:
         action = pollfd_open_mon();
         break;
-    case MON_USE_SELECT:
+    case eMON_USE_SELECT:
         action = selectfd_open_mon();
         break;
     default:

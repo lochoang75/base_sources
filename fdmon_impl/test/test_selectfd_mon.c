@@ -58,7 +58,7 @@ int main()
     BLOG_ENTER();
     signal_handler_init();
     BLOG(LOG_INFO, "Open sched");
-    struct scheduler_mon *mon = open_scheduler("select_fd_sched", MON_USE_SELECT);
+    struct scheduler_mon *mon = open_scheduler("select_fd_sched", eMON_USE_SELECT);
     if (mon == NULL)
     {
         BLOG(LOG_ERR, "Failed to open sched, exit");
@@ -66,7 +66,7 @@ int main()
     }
     BLOG(LOG_INFO, "Make request_info");
     struct mon_request_info *info = make_request_info("test_selectfd", &test_handler);
-    set_request_open_mode(info, MON_OPEN_MODE_READ);
+    set_request_open_mode(info, eMON_OPEN_MODE_READ);
     BLOG(LOG_INFO, "Regiser handler");
     ret = register_handler(mon, info);
     if (ret > 0)

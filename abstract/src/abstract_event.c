@@ -44,9 +44,10 @@ struct mon_request_info *make_request_info(const char *file_name, struct mon_eve
     memset(request_info, 0, alloc_size);
     request_info->file_name = request_info->ext_data;
     request_info->file_name_len = strlen(file_name) + 1;
-    request_info->open_mode = MON_OPEN_MODE_READ | MON_OPEN_MODE_WRITE;
+    request_info->open_mode = eMON_OPEN_MODE_READ | eMON_OPEN_MODE_WRITE;
     request_info->handler = handler;
     request_info->user_data = NULL;
+    request_info->fd = -1;
     memcpy(request_info->file_name, file_name, request_info->file_name_len);
     return request_info;
 }
@@ -75,12 +76,25 @@ int set_request_user_data(struct mon_request_info *info, void *user_data)
     return 0;
 }
 
-void copy_reqeust_info(struct mon_request_info *dst, struct mon_request_info *src)
+int set_request_fd(struct mon_request_info *info, int fd)
+{
+    if (info == NULL)
+    {
+        BLOG(LOG_WARNING, "Info is null, unable to set user_data" );
+        return -1;
+    }
+
+    info->fd = fd;
+    return 0;
+}
+
+void copy_request_info(struct mon_request_info *dst, struct mon_request_info *src)
 {
     dst->file_name_len = src->file_name_len;
     dst->handler = src->handler;
     dst->open_mode = src->open_mode;
     dst->user_data = src->user_data;
+    dst->fd = src->fd;
     dst->file_name = dst->ext_data;
     memcpy(dst->file_name, src->file_name, src->file_name_len);
 }

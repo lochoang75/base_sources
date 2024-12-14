@@ -77,7 +77,7 @@ static int handler_register_select_impl(struct scheduler_action *action, struct 
     memset(event_handler, 0, data_size);
     event_handler->info = (struct mon_request_info *)event_handler->ext_data;
     event_handler->fd = -1;
-    copy_reqeust_info(event_handler->info, info);
+    copy_request_info(event_handler->info, info);
     base_error_t error = list_add_tail(&select_mon->handler_list, &event_handler->node);
     if (error != kSUCCESS)
     {
@@ -113,12 +113,12 @@ static int start_scheduler_impl(struct scheduler_action *action)
 
         event_handler->fd = fd;
         select_mon->max_fd = (select_mon->max_fd > fd)? select_mon->max_fd : fd;
-        if (event_handler->info->open_mode & MON_OPEN_MODE_READ)
+        if (event_handler->info->open_mode & eMON_OPEN_MODE_READ)
         {
             FD_SET(fd, &select_mon->read_fds);
         }
 
-        if (event_handler->info->open_mode & MON_OPEN_MODE_WRITE)
+        if (event_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
         {
             FD_SET(fd, &select_mon->write_fds);
         }
