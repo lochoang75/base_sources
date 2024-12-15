@@ -45,17 +45,20 @@ static int extend_poll_fd_size(struct pollfd **fds, size_t *iosize)
 
 static struct mon_request_info *get_mon_info_base_on_fd(struct list_node *head, int fd)
 {
+    BLOG_ENTER();
     struct pollfd_event_handler *event_handler = NULL;
     struct list_node *item = NULL;
     list_for_each(head, item)
     {
         event_handler = container_of(item, struct pollfd_event_handler, node);
+        BLOG(LOG_INFO, "Event handler at (%p)", event_handler);
         if (event_handler->fd == fd)
         {
             return event_handler->info;
         }
     }
 
+    BLOG(LOG_ERR, "Get mon info return NULL, fd (%d)", fd);
     return NULL;
 }
 
@@ -64,38 +67,39 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
     int ret = 0;
     struct mon_event event;
     struct mon_request_info *info = NULL;
-    do
+    ret = poll(mon->fds, mon->fd_count, -1);
+    if (ret == -1)
     {
-        ret = poll(mon->fds, mon->fd_count, -1);
-        if (ret == -1)
+        BLOG(LOG_ERR, "Poll error, exit !!!");
+        return ret;
+    }
+
+    for (size_t i = 0; i < mon->fd_count; i++)
+    {
+        if (mon->fds[i].revents == 0)
         {
-            BLOG(LOG_ERR, "Poll error, exit !!!");
-            break;
+            continue;
+        }
+        info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
+        event.fd = mon->fds[i].fd;
+        event.file_path = info->file_name;
+        event.file_path_len = info->file_name_len;
+        event.user_data = info->user_data;
+        if (mon->fds[i].revents & POLLIN)
+        {
+            info->handler->on_read(mon->action.container, &event);
         }
 
-        for (size_t i = 0; i < mon->fd_count; i++)
+        if (mon->fds[i].revents & POLLOUT)
         {
-            info = get_mon_info_base_on_fd(&mon->handler_list, mon->fds[i].fd);
-            event.fd = mon->fds[i].fd;
-            event.file_path = info->file_name;
-            event.file_path_len = info->file_name_len;
-            event.user_data = info->user_data;
-            if (mon->fds[i].revents & POLLIN)
-            {
-                info->handler->on_read(mon->action.container, &event);
-            }
-
-            if (mon->fds[i].revents & POLLOUT)
-            {
-                info->handler->on_write(mon->action.container, &event);
-            }
-
-            if (mon->fds[i].revents & (POLLHUP | POLLERR | POLLNVAL))
-            {
-                info->handler->on_exception(mon->action.container, &event);
-            }
+            info->handler->on_write(mon->action.container, &event);
         }
-    } while (!mon->is_termiated);
+
+        if (mon->fds[i].revents & (POLLHUP | POLLERR | POLLNVAL))
+        {
+            info->handler->on_exception(mon->action.container, &event);
+        }
+    }
     return ret;
 }
 
@@ -114,8 +118,8 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
     BLOG(LOG_DEBUG, "New data node at (%p), node (%p)", event_handler, &event_handler->node);
     memset(event_handler, 0, data_size);
     event_handler->info = (struct mon_request_info *)event_handler->ext_data;
-    event_handler->fd = -1;
     copy_request_info(event_handler->info, info);
+    event_handler->fd = -1;
     base_error_t error = list_add_tail(&poll_mon->handler_list, &event_handler->node);
     if (error != kSUCCESS)
     {
@@ -125,12 +129,25 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
     return ret;
 }
 
-static int handler_unregister_poll_impl(struct scheduler_action *action __attribute__((unused)), int fd __attribute__((unused)))
+static int handler_unregister_poll_impl(struct scheduler_action *action , int fd)
 {
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon *)action->mon_obj;
+    struct list_node *item = NULL;
+    list_for_each(&poll_mon->handler_list, item)
+    {
+        struct pollfd_event_handler *event_handler = container_of(item, struct pollfd_event_handler, node);
+        if (event_handler->fd == fd)
+        {
+            list_remove(item);
+            item = item->prev;
+            free(event_handler);
+            break;
+        }
+    }
     return 0;
 }
 
-static int start_scheduler_impl(struct scheduler_action *action __attribute__((unused)))
+static int open_fd_and_poll(struct scheduler_action *action)
 {
     struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
     struct pollfd_event_handler *event_handler= NULL;
@@ -138,20 +155,31 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
     struct list_node *item;
     struct list_node *head = &poll_mon->handler_list;
     int fd = -1;
+    poll_mon->fd_count = 0;
     list_for_each(head, item)
     {
         event_handler = container_of(item, struct pollfd_event_handler, node);
         BLOG(LOG_DEBUG, "Data node at (%p)", event_handler);
         mon_handler = event_handler->info->handler;
-        fd = mon_handler->open(event_handler->info->file_name, event_handler->info->user_data);
-        if (fd < 0)
+        if (event_handler->fd > 0)
         {
-            //TODO(elliot): retry is required
-            BLOG(LOG_WARNING, "Failed to open file at path %s", event_handler->info->file_name);
-            continue;
+            fd = event_handler->fd;
+        } else if (event_handler->info->fd > 0)
+        {
+            event_handler->fd = event_handler->info->fd;
+            fd = event_handler->info->fd;
+        } else
+        {
+            fd = mon_handler->open(event_handler->info->file_name, event_handler->info->user_data);
+            if (fd < 0)
+            {
+                BLOG(LOG_WARNING, "Failed to open file at path %s", event_handler->info->file_name);
+                continue;
+            }
+
+            event_handler->fd = fd;
         }
 
-        event_handler->fd = fd;
         poll_mon->fds[poll_mon->fd_count].fd = fd;
         poll_mon->fds[poll_mon->fd_count].events = POLL_DEFAULT_EVENTS;
         if (event_handler->info->open_mode & eMON_OPEN_MODE_READ)
@@ -174,8 +202,17 @@ static int start_scheduler_impl(struct scheduler_action *action __attribute__((u
         }
     }
 
-    poll_mon->is_termiated = false;
     return start_pollfd(poll_mon);
+}
+
+static int start_scheduler_impl(struct scheduler_action *action)
+{
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
+    poll_mon->is_termiated = false;
+    do {
+        open_fd_and_poll(action);
+    } while (!poll_mon->is_termiated);
+    return 0;
 }
 
 static void close_scheduler_impl(struct scheduler_action *action)

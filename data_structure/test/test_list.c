@@ -27,7 +27,6 @@ int main()
     BLOG(LOG_INFO, "Init list");
     list_init(&head);
     list_init(&other);
-    BLOG(LOG_INFO, "App exit");
     struct node_data node_1 = {.node = {.next = NULL, .prev = NULL}, .data = 0};
     struct node_data node_2 = {.node = {.next = NULL, .prev = NULL}, .data = 1};
     struct node_data node_3 = {.node = {.next = NULL, .prev = NULL}, .data = 2};
@@ -54,5 +53,6 @@ int main()
         BLOG(LOG_ERR, "Failed to add item to list, error %d", ret);
     }
     print_list_data(&head);
+    BLOG(LOG_INFO, "App exit");
     return 0;
 }
