@@ -23,6 +23,7 @@ struct poll_fd_mon {
     size_t fd_count;
     size_t fd_size;
     bool is_termiated;
+    bool is_exception;
     char ext_data[0];
 };
 
@@ -103,53 +104,8 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
     return ret;
 }
 
-static int handler_register_poll_impl(struct scheduler_action *action, struct mon_request_info *info)
+static int open_fd_for_registered_file(struct poll_fd_mon *poll_mon)
 {
-    int ret = 0;
-    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
-    size_t data_size = sizeof(struct pollfd_event_handler) + get_request_info_size(info);
-    struct pollfd_event_handler *event_handler = malloc(data_size);
-    if (event_handler == NULL)
-    {
-        BLOG(LOG_ERR, "Failed to allocate memory");
-        return -1;
-    }
-
-    BLOG(LOG_DEBUG, "New data node at (%p), node (%p)", event_handler, &event_handler->node);
-    memset(event_handler, 0, data_size);
-    event_handler->info = (struct mon_request_info *)event_handler->ext_data;
-    copy_request_info(event_handler->info, info);
-    event_handler->fd = -1;
-    base_error_t error = list_add_tail(&poll_mon->handler_list, &event_handler->node);
-    if (error != kSUCCESS)
-    {
-        BLOG(LOG_ERR, "Unable to add handler, error %d", error);
-        ret = -1;
-    }
-    return ret;
-}
-
-static int handler_unregister_poll_impl(struct scheduler_action *action , int fd)
-{
-    struct poll_fd_mon *poll_mon = (struct poll_fd_mon *)action->mon_obj;
-    struct list_node *iter = NULL;
-    list_for_each(&poll_mon->handler_list, iter)
-    {
-        struct pollfd_event_handler *event_handler = container_of(iter, struct pollfd_event_handler, node);
-        if (event_handler->fd == fd)
-        {
-            list_remove(iter);
-            iter = iter->prev;
-            free(event_handler);
-            break;
-        }
-    }
-    return 0;
-}
-
-static int open_fd_and_poll(struct scheduler_action *action)
-{
-    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
     struct pollfd_event_handler *event_handler= NULL;
     struct mon_event_handler *mon_handler = NULL;
     struct list_node *item;
@@ -201,18 +157,74 @@ static int open_fd_and_poll(struct scheduler_action *action)
             }
         }
     }
+    return 0;
+}
 
-    return start_pollfd(poll_mon);
+
+static int handler_register_poll_impl(struct scheduler_action *action, struct mon_request_info *info)
+{
+    int ret = 0;
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
+    size_t data_size = sizeof(struct pollfd_event_handler) + get_request_info_size(info);
+    struct pollfd_event_handler *event_handler = malloc(data_size);
+    if (event_handler == NULL)
+    {
+        BLOG(LOG_ERR, "Failed to allocate memory");
+        return -1;
+    }
+
+    BLOG(LOG_DEBUG, "New data node at (%p), node (%p)", event_handler, &event_handler->node);
+    memset(event_handler, 0, data_size);
+    event_handler->info = (struct mon_request_info *)event_handler->ext_data;
+    copy_request_info(event_handler->info, info);
+    event_handler->fd = -1;
+    base_error_t error = list_add_tail(&poll_mon->handler_list, &event_handler->node);
+    if (error != kSUCCESS)
+    {
+        BLOG(LOG_ERR, "Unable to add handler, error %d", error);
+        ret = -1;
+    }
+    return ret;
+}
+
+static int handler_unregister_poll_impl(struct scheduler_action *action , int fd)
+{
+    struct poll_fd_mon *poll_mon = (struct poll_fd_mon *)action->mon_obj;
+    struct list_node *iter = NULL;
+    list_for_each(&poll_mon->handler_list, iter)
+    {
+        struct pollfd_event_handler *event_handler = container_of(iter, struct pollfd_event_handler, node);
+        if (event_handler->fd == fd)
+        {
+            list_remove(iter);
+            iter = iter->prev;
+            free(event_handler);
+            break;
+        }
+    }
+    return 0;
 }
 
 static int start_scheduler_impl(struct scheduler_action *action)
 {
+    int ret = 0;
     struct poll_fd_mon *poll_mon = (struct poll_fd_mon*)action->mon_obj;
     poll_mon->is_termiated = false;
     do {
-        open_fd_and_poll(action);
+        if (open_fd_for_registered_file(poll_mon) != 0)
+        {
+            poll_mon->is_exception = true;
+            ret = -1;
+            break;
+        }
+        if (start_pollfd(poll_mon) < 0)
+        {
+            poll_mon->is_exception = true;
+            ret = -1;
+            break;
+        }
     } while (!poll_mon->is_termiated);
-    return 0;
+    return ret;
 }
 
 static void close_scheduler_impl(struct scheduler_action *action)
