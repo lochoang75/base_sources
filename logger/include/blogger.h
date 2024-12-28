@@ -1,5 +1,9 @@
 #ifndef BLOGGER_H
 #define BLOGGER_H
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include <stdio.h>
 #include <string.h>
 #include "abstract_config.h"
@@ -45,4 +49,7 @@ void blog_print(int level, char *fmt, ...);
 const char* blog_get_level_tag(int level);
 void blog_deinit();
 
+#ifdef __cplusplus
+}
+#endif
 #endif /*BLOGGER_H*/

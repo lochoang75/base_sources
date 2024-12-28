@@ -144,8 +144,21 @@ static int handler_register_select_impl(struct scheduler_action *action, struct 
     return ret;
 }
 
-static int handler_unregister_select_impl(struct scheduler_action *action __attribute__((unused)), int fd __attribute__((unused)))
+static int handler_unregister_select_impl(struct scheduler_action *action , int fd)
 {
+    struct select_fd_mon *select_mon = (struct select_fd_mon *)action->mon_obj;
+    struct list_node *iter = NULL;
+    list_for_each(&select_mon->handler_list, iter)
+    {
+        struct select_event_handler *event_handler = container_of(iter, struct select_event_handler, node);
+        if (event_handler->fd == fd)
+        {
+            list_remove(iter);
+            iter = iter->prev;
+            free(event_handler);
+            break;
+        }
+    }
     return 0;
 }
 
