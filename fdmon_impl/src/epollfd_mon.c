@@ -170,11 +170,13 @@ static void close_scheduler_impl(struct scheduler_action *action)
 {
     struct epoll_fd_mon *epoll_mon = (struct epoll_fd_mon*)action->mon_obj;
     struct list_node *item = NULL;
+    struct list_node *iter = NULL;
     BLOG(LOG_INFO, "Free handler list");
-    list_for_each(&epoll_mon->handler_list, item)
+    list_for_each(&epoll_mon->handler_list, iter)
     {
-        list_remove(item);
-        item = item->prev;
+        list_remove(iter);
+        item = iter;
+        iter = iter->prev;
         free(item);
     }
     BLOG(LOG_INFO, "Free fd mon");

@@ -132,14 +132,14 @@ static int handler_register_poll_impl(struct scheduler_action *action, struct mo
 static int handler_unregister_poll_impl(struct scheduler_action *action , int fd)
 {
     struct poll_fd_mon *poll_mon = (struct poll_fd_mon *)action->mon_obj;
-    struct list_node *item = NULL;
-    list_for_each(&poll_mon->handler_list, item)
+    struct list_node *iter = NULL;
+    list_for_each(&poll_mon->handler_list, iter)
     {
-        struct pollfd_event_handler *event_handler = container_of(item, struct pollfd_event_handler, node);
+        struct pollfd_event_handler *event_handler = container_of(iter, struct pollfd_event_handler, node);
         if (event_handler->fd == fd)
         {
-            list_remove(item);
-            item = item->prev;
+            list_remove(iter);
+            iter = iter->prev;
             free(event_handler);
             break;
         }
@@ -219,11 +219,13 @@ static void close_scheduler_impl(struct scheduler_action *action)
 {
     struct poll_fd_mon *pollfd_mon = action->mon_obj;
     struct list_node *item = NULL;
+    struct list_node *iter = NULL;
     BLOG(LOG_INFO, "Free handler list");
-    list_for_each(&pollfd_mon->handler_list, item)
+    list_for_each(&pollfd_mon->handler_list, iter)
     {
-        list_remove(item);
-        item = item->prev;
+        list_remove(iter);
+        item = iter;
+        iter = iter->prev;
         free(item);
     }
     BLOG(LOG_INFO, "Free fd mon");
