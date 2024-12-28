@@ -21,6 +21,8 @@ struct epoll_fd_mon {
     struct scheduler_action action;
     struct list_node handler_list;
     int epoll_fd;
+    bool is_terminated;
+    bool is_exception;
     struct epoll_event events[EPOLL_MAX_EVENTS];
 };
 
@@ -56,6 +58,57 @@ static int start_epoll(struct epoll_fd_mon *mon)
         if (mon->events[i].events & EPOLLERR)
         {
             epoll_ev_handler->info->handler->on_exception(mon->action.container, &mon_event);
+        }
+    }
+    return 0;
+}
+
+static int open_fd_for_registered_file(struct epoll_fd_mon *epoll_mon)
+{
+    struct list_node *head = &epoll_mon->handler_list;
+    struct list_node *item = NULL;
+    struct epoll_event_handler *epoll_ev_handler = NULL;
+    struct mon_event_handler *mon_ev_handler = NULL;
+    int fd = -1;
+    int ret = 0;
+    list_for_each(head, item)
+    {
+        epoll_ev_handler = container_of(item, struct epoll_event_handler, node);;
+        mon_ev_handler = epoll_ev_handler->info->handler;
+        if (epoll_ev_handler->fd > 0)
+        {
+            fd = epoll_ev_handler->fd;
+        } else if (epoll_ev_handler->info->fd > 0)
+        {
+            fd = epoll_ev_handler->info->fd;
+            epoll_ev_handler->fd = epoll_ev_handler->info->fd;
+        } else
+        {
+            fd = mon_ev_handler->open(epoll_ev_handler->info->file_name, epoll_ev_handler->info->user_data);
+            if (fd < 0)
+            {
+                BLOG(LOG_WARNING, "Failed to open fd for file %s", epoll_ev_handler->info->file_name);
+                continue;
+            }
+            epoll_ev_handler->fd = fd;
+        }
+        epoll_ev_handler->event.data.ptr = epoll_ev_handler;
+        epoll_ev_handler->event.events = EPOLLERR;
+        if (epoll_ev_handler->info->open_mode & eMON_OPEN_MODE_READ)
+        {
+            epoll_ev_handler->event.events |= EPOLLIN;
+        }
+        if (epoll_ev_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
+        {
+            epoll_ev_handler->event.events |= EPOLLOUT;
+        }
+
+        ret = epoll_ctl(epoll_mon->epoll_fd, EPOLL_CTL_ADD, fd, &epoll_ev_handler->event);
+        if (ret < 0)
+        {
+            BLOG(LOG_ERR, "Failed to add fd %d to epoll, error %s", fd, strerror(errno));
+            close(fd);
+            epoll_ev_handler->fd = -1;
         }
     }
     return 0;
@@ -120,50 +173,19 @@ static int handler_unregister_epoll_impl(struct scheduler_action *action, int fd
 
 static int start_scheduler_impl(struct scheduler_action *action)
 {
-    struct epoll_fd_mon *epoll_mon = (struct epoll_fd_mon*)action->mon_obj;
-    struct list_node *head = &epoll_mon->handler_list;
-    struct list_node *item = NULL;
-    struct epoll_event_handler *epoll_ev_handler = NULL;
-    struct mon_event_handler *mon_ev_handler = NULL;
-    int fd = -1;
     int ret = 0;
-    list_for_each(head, item)
-    {
-        epoll_ev_handler = container_of(item, struct epoll_event_handler, node);;
-        mon_ev_handler = epoll_ev_handler->info->handler;
-        if (epoll_ev_handler->info->fd < 0)
+    struct epoll_fd_mon *epoll_mon = (struct epoll_fd_mon*)action->mon_obj;
+    epoll_mon->is_exception = true;
+    do {
+        open_fd_for_registered_file(epoll_mon);
+        if (start_epoll(epoll_mon) < 0)
         {
-            fd = mon_ev_handler->open(epoll_ev_handler->info->file_name, epoll_ev_handler->info->user_data);
-            if (fd < 0)
-            {
-                BLOG(LOG_WARNING, "Failed to open fd for file %s", epoll_ev_handler->info->file_name);
-                continue;
-            }
-        } else
-        {
-            fd = epoll_ev_handler->info->fd;
+            epoll_mon->is_exception = true;
+            ret = -1;
+            break;
         }
-        epoll_ev_handler->fd = fd;
-        epoll_ev_handler->event.data.ptr = epoll_ev_handler;
-        epoll_ev_handler->event.events = EPOLLERR;
-        if (epoll_ev_handler->info->open_mode & eMON_OPEN_MODE_READ)
-        {
-            epoll_ev_handler->event.events |= EPOLLIN;
-        }
-        if (epoll_ev_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
-        {
-            epoll_ev_handler->event.events |= EPOLLOUT;
-        }
-
-        ret = epoll_ctl(epoll_mon->epoll_fd, EPOLL_CTL_ADD, fd, &epoll_ev_handler->event);
-        if (ret < 0)
-        {
-            BLOG(LOG_ERR, "Failed to add fd %d to epoll, error %s", fd, strerror(errno));
-            close(fd);
-            epoll_ev_handler->fd = -1;
-        }
-    }
-    return start_epoll(epoll_mon);
+    } while (!epoll_mon->is_terminated);
+    return ret;
 }
 
 static void close_scheduler_impl(struct scheduler_action *action)

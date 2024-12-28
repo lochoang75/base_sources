@@ -21,6 +21,7 @@ struct select_fd_mon {
     fd_set except_fds;
     int max_fd;
     bool is_termiated;
+    bool is_exception;
     char ext_data[0];
 };
 
@@ -62,6 +63,62 @@ static int start_select(struct select_fd_mon *fdmon)
     return 0;
 }
 
+static int open_fd_for_registered_file(struct select_fd_mon *select_mon)
+{
+    struct select_event_handler *event_handler = NULL;
+    struct mon_event_handler *mon_handler = NULL;
+    struct list_node *item = NULL;
+    struct list_node *head = &select_mon->handler_list;
+    int fd = -1;
+
+    FD_ZERO(&select_mon->read_fds);
+    FD_ZERO(&select_mon->write_fds);
+    FD_ZERO(&select_mon->except_fds);
+    list_for_each(head, item)
+    {
+        event_handler = container_of(item, struct select_event_handler, node);
+        mon_handler = event_handler->info->handler;
+        if (fd < 0)
+        {
+            BLOG(LOG_WARNING, "Failed to open file at path %s", event_handler->info->file_name);
+            continue;
+        }
+
+        if (event_handler->fd > 0)
+        {
+            fd = event_handler->fd;
+        } else if (event_handler->info->fd > 0)
+        {
+            fd = event_handler->info->fd;
+            event_handler->fd = event_handler->info->fd;
+        } else
+        {
+            fd = mon_handler->open(event_handler->info->file_name, event_handler->info->user_data);
+            if (fd < 0)
+            {
+                BLOG(LOG_WARNING, "Failed to open file at path %s", event_handler->info->file_name);
+                continue;
+            }
+            event_handler->fd = fd;
+        }
+
+        select_mon->max_fd = (select_mon->max_fd > fd)? select_mon->max_fd : fd;
+        if (event_handler->info->open_mode & eMON_OPEN_MODE_READ)
+        {
+            FD_SET(fd, &select_mon->read_fds);
+        }
+
+        if (event_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
+        {
+            FD_SET(fd, &select_mon->write_fds);
+        }
+
+        FD_SET(fd, &select_mon->except_fds);
+    }
+
+    return 0;
+}
+
 static int handler_register_select_impl(struct scheduler_action *action, struct mon_request_info *info)
 {
     int ret = 0;
@@ -94,39 +151,19 @@ static int handler_unregister_select_impl(struct scheduler_action *action __attr
 
 static int start_scheduler_impl(struct scheduler_action *action)
 {
+    int ret = 0;
     struct select_fd_mon *select_mon = (struct select_fd_mon *)action->mon_obj;
-    struct select_event_handler *event_handler = NULL;
-    struct mon_event_handler *mon_handler = NULL;
-    struct list_node *item = NULL;
-    struct list_node *head = &select_mon->handler_list;
-    int fd = -1;
-    list_for_each(head, item)
-    {
-        event_handler = container_of(item, struct select_event_handler, node);
-        mon_handler = event_handler->info->handler;
-        fd = mon_handler->open(event_handler->info->file_name, event_handler->info->user_data);
-        if (fd < 0)
-        {
-            BLOG(LOG_WARNING, "Failed to open file at path %s", event_handler->info->file_name);
-            continue;
-        }
-
-        event_handler->fd = fd;
-        select_mon->max_fd = (select_mon->max_fd > fd)? select_mon->max_fd : fd;
-        if (event_handler->info->open_mode & eMON_OPEN_MODE_READ)
-        {
-            FD_SET(fd, &select_mon->read_fds);
-        }
-
-        if (event_handler->info->open_mode & eMON_OPEN_MODE_WRITE)
-        {
-            FD_SET(fd, &select_mon->write_fds);
-        }
-
-        FD_SET(fd, &select_mon->except_fds);
-    }
     select_mon->is_termiated = false;
-    return start_select(select_mon);
+    do {
+        open_fd_for_registered_file(select_mon);
+        if (start_select(select_mon) < 0)
+        {
+            select_mon->is_exception = true;
+            ret = -1;
+            break;
+        }
+    } while(!select_mon->is_termiated);
+    return ret;
 }
 
 static void close_scheduler_impl(struct scheduler_action *action)
