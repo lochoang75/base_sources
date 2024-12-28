@@ -1,5 +1,9 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -121,4 +125,8 @@ static base_error_t list_splice(struct list_node *list, struct list_node **other
     *other = NULL;
     return kSUCCESS;
 }
+
+#ifdef __cplusplus
+}
+#endif
 #endif /*LINKED_LIST_H*/
