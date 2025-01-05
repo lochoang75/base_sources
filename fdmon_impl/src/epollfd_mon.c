@@ -153,18 +153,24 @@ static int handler_unregister_epoll_impl(struct scheduler_action *action, int fd
 
     struct list_node *head = &epoll_mon->handler_list;
     struct list_node *item = NULL;
-    struct epoll_event_handler *epoll_ev_handler = NULL;
+    struct epoll_event_handler *event_handler = NULL;
     list_for_each(head, item)
     {
-        epoll_ev_handler = container_of(item, struct epoll_event_handler, node);
-        if (epoll_ev_handler->fd == fd)
+        event_handler = container_of(item, struct epoll_event_handler, node);
+        if (event_handler->fd == fd)
         {
+            struct mon_event event = {
+                .fd = fd,
+                .file_path = event_handler->info->file_name,
+                .file_path_len = event_handler->info->file_name_len,
+                .user_data = event_handler->info->user_data
+            };
             list_remove(item);
             item = item->prev;
-            BLOG(LOG_INFO, "Handler at fd %d (%p) removed", fd, epoll_ev_handler);
-            epoll_ev_handler->info->handler->close(fd, epoll_ev_handler->info->user_data);
-            epoll_ev_handler->info->handler->on_terminate(action->container, epoll_ev_handler->info->user_data);
-            free(epoll_ev_handler);
+            event_handler->info->handler->close(fd, &event);
+            event_handler->info->handler->on_terminate(action->container, &event);
+            BLOG(LOG_INFO, "Handler at fd %d (%p) removed", fd, event_handler);
+            free(event_handler);
             break;
         }
     }
@@ -191,15 +197,13 @@ static int start_scheduler_impl(struct scheduler_action *action)
 static void close_scheduler_impl(struct scheduler_action *action)
 {
     struct epoll_fd_mon *epoll_mon = (struct epoll_fd_mon*)action->mon_obj;
-    struct list_node *item = NULL;
     struct list_node *iter = NULL;
     BLOG(LOG_INFO, "Free handler list");
     list_for_each(&epoll_mon->handler_list, iter)
     {
+        struct epoll_event_handler *handler = container_of(iter, struct epoll_event_handler, node);
         list_remove(iter);
-        item = iter;
-        iter = iter->prev;
-        free(item);
+        free(handler);
     }
     BLOG(LOG_INFO, "Free fd mon");
     free(epoll_mon);

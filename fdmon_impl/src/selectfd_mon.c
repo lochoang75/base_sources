@@ -153,6 +153,14 @@ static int handler_unregister_select_impl(struct scheduler_action *action , int 
         struct select_event_handler *event_handler = container_of(iter, struct select_event_handler, node);
         if (event_handler->fd == fd)
         {
+            struct mon_event event = {
+                .fd = fd,
+                .file_path = event_handler->info->file_name,
+                .file_path_len = event_handler->info->file_name_len,
+                .user_data = event_handler->info->user_data
+            };
+            event_handler->info->handler->close(fd, &event);
+            event_handler->info->handler->on_terminate(action->container, &event);
             list_remove(iter);
             iter = iter->prev;
             free(event_handler);
@@ -182,15 +190,14 @@ static int start_scheduler_impl(struct scheduler_action *action)
 static void close_scheduler_impl(struct scheduler_action *action)
 {
     struct select_fd_mon *select_mon = action->mon_obj;
-    struct list_node *item = NULL;
     struct list_node *iter = NULL;
     BLOG(LOG_INFO, "Free handler list");
     list_for_each(&select_mon->handler_list, iter)
     {
+        struct select_event_handler *event_handler = container_of(iter, struct select_event_handler, node);
         list_remove(iter);
-        item = iter;
         iter = iter->prev;
-        free(item);
+        free(event_handler);
     }
     BLOG(LOG_INFO, "Free fd mon");
     free(select_mon);

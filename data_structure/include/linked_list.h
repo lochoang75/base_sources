@@ -20,6 +20,8 @@ extern "C"
 #define list_forech_reverse(list, pos) \
         for(pos = (list)->prev; !list_is_list_head((list), pos); pos = pos->prev)
 
+#define INIT_HEAD(node) {.next = (node), .prev = (node)}
+
 struct list_node {
     struct list_node *next;
     struct list_node *prev;
