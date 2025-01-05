@@ -1,5 +1,5 @@
 set(base_shell_src  ${CMAKE_CURRENT_SOURCE_DIR}/src/base_shell.cpp
-                    ${CMAKE_CURRENT_SOURCE_DIR}/src/auto_complete.cpp)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/auto_completer.cpp)
 add_executable(base_shell ${base_shell_src})
 
 find_package(Readline REQUIRED)

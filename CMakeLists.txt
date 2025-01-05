@@ -2,12 +2,17 @@ cmake_minimum_required(VERSION 3.10)
 project(base_source)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -Wall -Wextra -Wno-unused-function -std=gnu11 -fPIC")
 option(BUILD_TESTS "Build test apps" ON)
+option(SUPPORT_TIMER_FD_WITH_POLL "Use timerfd instead of posix timer" ON)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/abstract/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/logger/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/data_structure/include)
+
+if(SUPPORT_TIMER_FD_WITH_POLL)
+add_compile_definitions(SUPPORT_TIMER_FD_WITH_POLL)
+endif(SUPPORT_TIMER_FD_WITH_POLL)
 
 add_subdirectory(third_party)
 add_subdirectory(logger)
@@ -17,3 +22,4 @@ add_subdirectory(abstract)
 add_subdirectory(apps)
 add_subdirectory(fdmon_impl)
 add_subdirectory(threadpool)
+add_subdirectory(posix_timer)

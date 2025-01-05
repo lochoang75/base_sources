@@ -7,6 +7,7 @@ public:
     CommandData();
     ~CommandData();
 private:
+
 };
 
 #endif /*COMMAND_DATA_H*/
