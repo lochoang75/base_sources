@@ -20,6 +20,7 @@ struct select_fd_mon {
     fd_set write_fds;
     fd_set except_fds;
     int max_fd;
+    struct timeval poll_timeout;
     bool is_termiated;
     bool is_exception;
     char ext_data[0];
@@ -27,12 +28,18 @@ struct select_fd_mon {
 
 static int start_select(struct select_fd_mon *fdmon)
 {
-    int ret = select(fdmon->max_fd + 1, &fdmon->read_fds, &fdmon->write_fds, &fdmon->except_fds, NULL);
+    int ret = select(fdmon->max_fd + 1, &fdmon->read_fds, &fdmon->write_fds, &fdmon->except_fds, &(fdmon->poll_timeout));
     if (ret == -1)
     {
         BLOG(LOG_ERR, "Select perform failed");
         return -1;
     }
+
+    if (ret == 0)
+    {
+        return ret;
+    }
+
     struct list_node *item = NULL;
     struct list_node *head = &fdmon->handler_list;
     struct mon_event event;
@@ -219,6 +226,8 @@ struct scheduler_action *selectfd_open_mon()
     select_mon->action.close_action = close_scheduler_impl;
     select_mon->action.start_scheduler = start_scheduler_impl;
     select_mon->is_termiated = false;
+    select_mon->poll_timeout.tv_sec = 0;
+    select_mon->poll_timeout.tv_usec = 20000; /* 20 ms*/
     FD_ZERO(&select_mon->read_fds);
     FD_ZERO(&select_mon->write_fds);
     FD_ZERO(&select_mon->except_fds);

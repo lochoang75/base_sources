@@ -3,6 +3,7 @@
 #include "abstract_timer.h"
 #include "blogger.h"
 #include "abstract_utils.h"
+#include "abstract_fd_mon.h"
 
 static bool oneshot_exit = false;
 static bool repeate_exit = false;
@@ -38,9 +39,16 @@ void timer_repeat_callback(timer_instance_t *timer, void *user_data)
     }
 }
 
-int main()
+int main(void)
 {
     blog_init(LOG_DEBUG);
+    scheduler_mon_t *mon = open_scheduler("TimerFdSched", eMON_USE_POLL);
+    if (mon == NULL)
+    {
+        BLOG(LOG_ERR, "Failed to open fd scheduler");
+        return -1;
+    }
+
     oneshot_data = time(NULL);
     struct timer_info oneshot_info = {
         .callback = timer_oneshot_callback,
@@ -57,28 +65,21 @@ int main()
         .user_data = &repeat_data
     };
 
-    int ret = timer_open(&oneshot_info);
-    if (ret != 0)
+    if (timer_fd_open(mon, &oneshot_info) < 0)
     {
-        BLOG(LOG_ERR, "Failed to open posix timer oneshot");
+        BLOG(LOG_ERR, "Failed to open oneshot timer use fd");
         return -1;
     }
-    BLOG(LOG_INFO, "Open oneshot timer successful");
+    BLOG(LOG_INFO, "Open oneshot timer success");
 
-    ret = timer_open(&repeat_info);
-    if (ret != 0)
+    if (timer_fd_open(mon, &repeat_info) < 0)
     {
-        BLOG(LOG_ERR, "Failed to open posix timer repeat");
+        BLOG(LOG_ERR, "Failed to open repeat timer use fd");
         return -1;
     }
-    BLOG(LOG_INFO, "Open repeat timer successful");
-    do {
-        safe_sleep_ms(500);
-        if (oneshot_exit && repeate_exit)
-        {
-            break;
-        }
-    } while (1);
+    BLOG(LOG_INFO, "Open repeat timer success");
+
+    start_scheduler(mon);
     BLOG(LOG_INFO, "Exit...");
     blog_deinit();
     return 0;

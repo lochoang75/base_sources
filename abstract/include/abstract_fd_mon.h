@@ -11,15 +11,9 @@ struct scheduler_action{
     int (*start_scheduler)(struct scheduler_action *action);
 };
 
-struct scheduler_mon {
-    mon_type_t scheduler_type;
-    struct scheduler_action *action;
-    char scheduler_name[0];
-};
-
-struct scheduler_mon * open_scheduler(const char *name, mon_type_t type);
-int register_handler(struct scheduler_mon *scheduler, struct mon_request_info *handler);
-int unregister_handler(struct scheduler_mon *scheduler, int fd);
-void close_scheduler(struct scheduler_mon *mon);
-int start_scheduler(struct scheduler_mon *mon);
+scheduler_mon_t * open_scheduler(const char *name, mon_type_t type);
+int register_handler(scheduler_mon_t *scheduler, struct mon_request_info *handler);
+int unregister_handler(scheduler_mon_t *scheduler, int fd);
+void close_scheduler(scheduler_mon_t *mon);
+int start_scheduler(scheduler_mon_t *mon);
 #endif /*BASE_FD_MON_H*/

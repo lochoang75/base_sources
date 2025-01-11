@@ -21,6 +21,7 @@ struct epoll_fd_mon {
     struct scheduler_action action;
     struct list_node handler_list;
     int epoll_fd;
+    int poll_timeout;
     bool is_terminated;
     bool is_exception;
     struct epoll_event events[EPOLL_MAX_EVENTS];
@@ -30,12 +31,17 @@ static int start_epoll(struct epoll_fd_mon *mon)
 {
     struct epoll_event_handler *epoll_ev_handler = NULL;
     struct mon_event mon_event;
-    int ntfs = epoll_wait(mon->epoll_fd, mon->events, EPOLL_MAX_EVENTS, -1);
+    int ntfs = epoll_wait(mon->epoll_fd, mon->events, EPOLL_MAX_EVENTS, mon->poll_timeout);
     if (ntfs == -1)
     {
-        BLOG(LOG_ERR, "Error while perform epoll, exit");
+        BLOG(LOG_ERR, "Error while perform epoll, errno %s, exit", strerror(errno));
         close(mon->epoll_fd);
         return -1;
+    }
+
+    if (ntfs == 0)
+    {
+        return 0;
     }
 
     for (int i = 0; i < ntfs; i++)
@@ -229,6 +235,7 @@ struct scheduler_action *epollfd_open_mon()
     epoll_mon->action.close_action = close_scheduler_impl;
     epoll_mon->action.start_scheduler = start_scheduler_impl;
     epoll_mon->action.handler_unregister = handler_unregister_epoll_impl;
+    epoll_mon->poll_timeout = 20;
     list_init(&epoll_mon->handler_list);
     return &epoll_mon->action;
 }

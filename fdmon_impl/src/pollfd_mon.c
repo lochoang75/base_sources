@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <poll.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "blogger.h"
 #define POLL_DEFAULT_EVENTS     POLLERR | POLLHUP | POLLNVAL
@@ -22,6 +23,7 @@ struct poll_fd_mon {
     struct pollfd *fds;
     size_t fd_count;
     size_t fd_size;
+    int poll_timeout;
     bool is_termiated;
     bool is_exception;
     char ext_data[0];
@@ -68,10 +70,15 @@ LOCK_FUNC static int start_pollfd(struct poll_fd_mon *mon)
     int ret = 0;
     struct mon_event event;
     struct mon_request_info *info = NULL;
-    ret = poll(mon->fds, mon->fd_count, -1);
+    ret = poll(mon->fds, mon->fd_count, mon->poll_timeout);
     if (ret == -1)
     {
-        BLOG(LOG_ERR, "Poll error, exit !!!");
+        BLOG(LOG_ERR, "Poll error: %s, exit !!!", strerror(errno));
+        return ret;
+    }
+
+    if (ret == 0)
+    {
         return ret;
     }
 
@@ -115,7 +122,7 @@ static int open_fd_for_registered_file(struct poll_fd_mon *poll_mon)
     list_for_each(head, item)
     {
         event_handler = container_of(item, struct pollfd_event_handler, node);
-        BLOG(LOG_DEBUG, "Data node at (%p)", event_handler);
+        //BLOG(LOG_DEBUG, "Data node at (%p)", event_handler);
         mon_handler = event_handler->info->handler;
         if (event_handler->fd > 0)
         {

@@ -153,6 +153,21 @@ unsigned long timer_get_expire_ms(timer_instance_t *timer)
 }
 
 #ifdef SUPPORT_TIMER_FD_WITH_POLL
+static int _timer_rearm(struct timer_instance * timer, int fd)
+{
+    struct itimerspec its;
+    memset(&its, 0, sizeof(struct itimerspec));
+    its.it_value.tv_sec = timer->info.expire_ms / 1000;
+    its.it_value.tv_nsec = (timer->info.expire_ms - (its.it_value.tv_sec * 1000)) * 1000000;
+    its.it_interval.tv_sec = its.it_value.tv_sec;
+    its.it_interval.tv_nsec = its.it_value.tv_nsec;
+    if(timerfd_settime(fd, 0, &its, NULL) == -1)
+    {
+        return -1;
+    }
+    return 0;
+}
+
 static int _timer_fd_open(const char *file_name __attribute__((unused)), void *user_data)
 {
     struct timer_instance *timer = (struct timer_instance*)user_data;
@@ -201,6 +216,10 @@ static int _timer_fd_on_read(scheduler_mon_t *mon, struct mon_event *event)
     if (timer->info.type == eTIMER_ONESHOT)
     {
         timer->async_cleanup = true;
+    } else if (_timer_rearm(timer, event->fd) < 0)
+    {
+        unregister_handler(mon, event->fd);
+        return -1;
     }
     return 0;
 }
@@ -223,26 +242,33 @@ static struct mon_event_handler timer_fd_handler = {
 
 int timer_fd_open(struct scheduler_mon *mon, const struct timer_info *info)
 {
+    int ret = -1;
     if (mon == NULL || info == NULL)
     {
         BLOG(LOG_ERR, "Monitor is (%p), info (%p)", mon, info);
-        return -1;
+        return ret;
     }
     struct timer_instance *timer = malloc(sizeof(struct timer_instance));
     if (timer == NULL)
     {
         BLOG(LOG_ERR, "Unable to allocate mem size %d", sizeof(struct timer_instance));
-        return -1;
+        return ret;
     }
     _timer_info_clone(&timer->info, info);
     struct mon_request_info *mon_request = make_request_info("timer_fd", &timer_fd_handler);
     if (mon_request == NULL)
     {
         BLOG(LOG_ERR, "Unable to allocate mon request data");
-        return -1;
+        return ret;
     }
     set_request_open_mode(mon_request, eMON_OPEN_MODE_READ);
     set_request_user_data(mon_request, timer);
+    ret = register_handler(mon, mon_request);
+    if (ret < 0)
+    {
+        BLOG(LOG_INFO, "Unable to register handler for timerfd");
+        return ret;
+    }
     return 0;
 }
 #endif /*SUPPORT_TIMER_FD_WITH_POLL*/

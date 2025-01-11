@@ -6,6 +6,12 @@
 #include "blogger.h"
 #include "mon_factory.h"
 
+struct scheduler_mon {
+    mon_type_t scheduler_type;
+    struct scheduler_action *action;
+    char scheduler_name[0];
+};
+
 struct scheduler_mon *open_scheduler(const char *name, mon_type_t type)
 {
     BLOG_ENTER();
@@ -32,7 +38,7 @@ struct scheduler_mon *open_scheduler(const char *name, mon_type_t type)
     return mon;
 }
 
-int register_handler(struct scheduler_mon *scheduler, struct mon_request_info *info)
+int register_handler(scheduler_mon_t *scheduler, struct mon_request_info *info)
 {
     if (scheduler == NULL || info == NULL)
     {
@@ -42,7 +48,7 @@ int register_handler(struct scheduler_mon *scheduler, struct mon_request_info *i
     return scheduler->action->handler_register(scheduler->action, info);
 }
 
-int unregister_handler(struct scheduler_mon *scheduler, int fd)
+int unregister_handler(scheduler_mon_t *scheduler, int fd)
 {
     BLOG_ENTER();
     if (scheduler == NULL)
@@ -53,7 +59,7 @@ int unregister_handler(struct scheduler_mon *scheduler, int fd)
     return scheduler->action->handler_unregister(scheduler->action, fd);
 }
 
-void close_scheduler(struct scheduler_mon *scheduler)
+void close_scheduler(scheduler_mon_t *scheduler)
 {
     if (scheduler == NULL || scheduler->action == NULL)
     {
@@ -64,7 +70,7 @@ void close_scheduler(struct scheduler_mon *scheduler)
     free(scheduler);
 }
 
-int start_scheduler(struct scheduler_mon *scheduler)
+int start_scheduler(scheduler_mon_t *scheduler)
 {
     return scheduler->action->start_scheduler(scheduler->action);
 }

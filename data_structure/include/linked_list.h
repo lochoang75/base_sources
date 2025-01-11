@@ -107,8 +107,8 @@ static base_error_t list_remove(struct list_node *node)
 static int list_get_size(struct list_node *list)
 {
     int count = 0;
-    struct list_node *tmp = list;
-    for (tmp = list; !list_is_list_head(list, tmp); tmp = tmp->next)
+    struct list_node *tmp = NULL;
+    list_for_each(list, tmp)
     {
         count ++;
     }
