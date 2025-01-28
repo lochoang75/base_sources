@@ -75,25 +75,6 @@ static base_error_t list_add_head(struct list_node *list, struct list_node *node
     return kSUCCESS;
 }
 
-static struct list_node *list_ref(struct list_node *list, size_t index)
-{
-    if (list == NULL)
-    {
-        return NULL;
-    }
-
-    struct list_node *tmp = list;
-    for (tmp = list; !list_is_list_head(list, tmp); tmp = tmp->next)
-    {
-        index--;
-    }
-    if (index != 0 && list_is_list_head(list, tmp))
-    {
-        return tmp;
-    }
-    return NULL;
-}
-
 static base_error_t list_remove(struct list_node *node)
 {
     base_error_t ret = kINVALID_MEM;

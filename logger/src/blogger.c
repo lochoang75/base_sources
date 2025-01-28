@@ -60,7 +60,7 @@ void blog_deinit(void)
 #endif
 }
 
-void blog_print(int level, char *fmt, ...)
+void blog_print(int level, const char *fmt, ...)
 {
     va_list arg;
     va_start(arg, fmt);
@@ -71,7 +71,7 @@ void blog_print(int level, char *fmt, ...)
 #else
     if (level <= log_level)
     {
-        fprintf(stdout, "%s\n", log_buffer);
+        fprintf(stdout, "%s", log_buffer);
     }
 #endif
 }

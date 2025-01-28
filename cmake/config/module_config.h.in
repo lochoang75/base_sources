@@ -1,0 +1,10 @@
+#ifndef MODULE_CONFIG_H
+#define MODULE_CONFIG_H
+#define VERSION_MAJOR    @base_source_VERSION_MAJOR@
+#define VERSION_MINOR    @base_source_VERSION_MINOR@
+#define VERSION_REVISION @base_source_VERSION_PATCH@
+#define LOG_BUFFER_SIZE  @base_source_LOG_BUFFER_SIZE@
+
+#cmakedefine SUPPORT_TIMER_FD_WITH_POLL 1
+#cmakedefine USE_SYLOG  1
+#endif /*MODULE_CONFIG_H*/

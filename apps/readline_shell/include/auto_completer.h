@@ -1,3 +1,0 @@
-#ifndef AUTO_COMPLETER_H
-#define AUTO_COMPLETER_H
-#endif /*AUTO_COMPLTETER_H*/
