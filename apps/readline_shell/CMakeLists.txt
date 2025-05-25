@@ -14,6 +14,7 @@ list(APPEND base_shell_src
 list(APPEND base_shell_src
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/view/application_view.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/view/drawing_factory.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/view/drawing_request.cpp
                     ${CMAKE_CURRENT_SOURCE_DIR}/src/view/drawing_ncurses_impl.cpp
                     )
 

@@ -4,6 +4,7 @@
 
 ApplicationView:: ApplicationView(IAutoCompleter *completer, IDrawing *drawing): mCompleter(completer), mDrawing(drawing)
 {
+    //mDrawing->InitWindows(300, 300);
 }
 
 ApplicationView:: ~ApplicationView()
@@ -24,6 +25,9 @@ int ApplicationView:: StartUIThread()
             BLOG_NOLF(LOG_INFO, " %s", (*item).c_str());
         }
     }
+    //DrawingRequest request{10, 10};
+    //request.SetDrawingText("Basic shell implementation");
+    //mDrawing->DrawText(request);
     return 0;
 }
 
