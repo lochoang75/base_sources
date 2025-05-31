@@ -51,10 +51,10 @@ static struct mon_event_handler test_handler = {
     .on_terminate = on_termiate_handler
 };
 
-int main()
+int main(int argc __attribute__((unused)), char **argv)
 {
     int ret = 0;
-    blog_init(LOG_DEBUG);
+    blog_init(LOG_DEBUG, argv[0]);
     BLOG_ENTER();
     signal_handler_init();
     BLOG(LOG_INFO, "Open sched");

@@ -19,9 +19,9 @@ static void print_list_data(struct list_node *head)
     }
 }
 
-int main()
+int main(int argc __attribute__((unused)), char **argv)
 {
-    blog_init(LOG_DEBUG);
+    blog_init(LOG_DEBUG, argv[0]);
     struct list_node head;
     struct list_node other;
     BLOG(LOG_INFO, "Init list");

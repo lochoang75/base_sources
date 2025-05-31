@@ -38,9 +38,9 @@ void timer_repeat_callback(timer_instance_t *timer, void *user_data)
     }
 }
 
-int main()
+int main(int argc __attribute__((unused)), char **argv)
 {
-    blog_init(LOG_DEBUG);
+    blog_init(LOG_DEBUG, argv[0]);
     oneshot_data = time(NULL);
     struct timer_info oneshot_info = {
         .callback = timer_oneshot_callback,

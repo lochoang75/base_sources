@@ -163,8 +163,8 @@ static struct mon_event_handler server_fd_handler = {
 };
 
 
-int main() {
-    blog_init(LOG_DEBUG);
+int main(int argc __attribute__((unused)), char **argv) {
+    blog_init(LOG_DEBUG, argv[0]);
     threadpool_t *tpool = threadpool_create(32, 32, 0);
     if (tpool == NULL)
     {

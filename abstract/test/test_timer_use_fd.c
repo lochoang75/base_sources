@@ -39,9 +39,9 @@ void timer_repeat_callback(timer_instance_t *timer, void *user_data)
     }
 }
 
-int main(void)
+int main(int argc __attribute__((unused)), char **argv)
 {
-    blog_init(LOG_DEBUG);
+    blog_init(LOG_DEBUG, argv[0]);
     scheduler_mon_t *mon = open_scheduler("TimerFdSched", eMON_USE_POLL);
     if (mon == NULL)
     {

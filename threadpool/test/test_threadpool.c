@@ -20,9 +20,9 @@ void dummy_task(void *arg __attribute__((unused))) {
     pthread_mutex_unlock(&lock);
 }
 
-int main()
+int main(int argc __attribute__((unused)), char **argv)
 {
-    blog_init(LOG_INFO);
+    blog_init(LOG_INFO, argv[0]);
     threadpool_t *pool;
 
     pthread_mutex_init(&lock, NULL);

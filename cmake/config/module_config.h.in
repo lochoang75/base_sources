@@ -4,7 +4,11 @@
 #define VERSION_MINOR    @base_source_VERSION_MINOR@
 #define VERSION_REVISION @base_source_VERSION_PATCH@
 #define LOG_BUFFER_SIZE  @base_source_LOG_BUFFER_SIZE@
+#define APP_NAME         @apps_APP_NAME@
 
 #cmakedefine SUPPORT_TIMER_FD_WITH_POLL 1
-#cmakedefine USE_SYLOG  1
+/*#cmakedefine USE_SYSTEMD_LOGGER  1 */
+/*#cmakedefine USE_SYSLOG_LOGGER  1 */
+/*#cmakedefine USE_STDLOG_LOGGER  1 */
+#cmakedefine USE_FILE_LOGGER  1
 #endif /*MODULE_CONFIG_H*/

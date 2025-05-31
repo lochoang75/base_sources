@@ -9,8 +9,8 @@
 #define PORT 65432
 #define BUFFER_SIZE 1024
 
-int main() {
-    blog_init(LOG_INFO);
+int main(int argc __attribute__((unused)), char **argv) {
+    blog_init(LOG_INFO, argv[0]);
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;

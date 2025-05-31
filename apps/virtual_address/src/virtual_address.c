@@ -48,9 +48,9 @@ uint64_t virt_to_phys(void *virt_addr) {
     return phys_addr;
 }
 
-int main(void)
+int main(int argc __attribute__((unused)), char **argv)
 {
-    blog_init(LOG_INFO);
+    blog_init(LOG_INFO, argv[0]);
     signal_handler_init();
     uint64_t physic_address = virt_to_phys(&local_variable);
     BLOG(LOG_INFO, "Virtual address %ld map to physical address %ld", &local_variable, physic_address);

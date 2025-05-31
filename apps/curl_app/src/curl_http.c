@@ -1,9 +1,9 @@
 #include "blogger.h"
 #include "curl/curl.h"
 
-int main(void)
+int main(int argc __attribute__((unused)), char **argv)
 {
-    blog_init(LOG_DEBUG);
+    blog_init(LOG_DEBUG, argv[0]);
     CURL *curl;
     CURLcode res;
 

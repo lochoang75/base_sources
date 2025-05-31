@@ -59,9 +59,7 @@ dupstr (s)
   return (r);
 }
 
-main (argc, argv)
-     int argc;
-     char **argv;
+main (int argc __attribute__((unused)), char **argv)
 {
   char *line, *s;
 
